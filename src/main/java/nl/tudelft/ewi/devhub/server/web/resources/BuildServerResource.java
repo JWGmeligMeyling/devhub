@@ -28,11 +28,11 @@ import nl.tudelft.ewi.devhub.server.web.filters.RequireAuthenticatedUser;
 import nl.tudelft.ewi.devhub.server.web.templating.TemplateEngine;
 
 import org.eclipse.jetty.util.UrlEncoded;
-import org.jboss.resteasy.plugins.guice.RequestScoped;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 import com.google.inject.persist.Transactional;
+import com.google.inject.servlet.RequestScoped;
 
 @RequestScoped
 @Path("build-servers")

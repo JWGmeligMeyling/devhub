@@ -55,13 +55,13 @@ import nl.tudelft.ewi.jgit.proxy.RepositoyProxy;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.transport.resolver.ServiceNotAuthorizedException;
-import org.jboss.resteasy.plugins.guice.RequestScoped;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.inject.persist.Transactional;
+import com.google.inject.servlet.RequestScoped;
 
 @Slf4j
 @RequestScoped
@@ -300,7 +300,7 @@ public class ProjectsResource extends Resource {
 	}
 	
 	@GET
-	@Path("{courseCode}/groups/{groupNumber}/branch/{branchName}")
+	@Path("{courseCode}/groups/{groupNumber}/branch/{branchName:.+}")
 	@Transactional
 	public Response showBranchOverview(@Context HttpServletRequest request,
 			@PathParam("courseCode") String courseCode,
@@ -591,7 +591,7 @@ public class ProjectsResource extends Resource {
 			final int page) throws ApiError {
 		
 		try {
-			BranchProxy branchProxy = repositoryProxy.getBranch("master");
+			BranchProxy branchProxy = repositoryProxy.getBranch(branchName);
 			DetailedBranchModel branch =
 					DetailedBranchModel.from(branchProxy.getBranchModel());
 			branch.setAmountOfCommits(branchProxy.amontOfCommits());

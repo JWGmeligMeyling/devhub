@@ -12,8 +12,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.persist.PersistFilter;
+import com.google.inject.servlet.GuiceFilter;
 import com.google.inject.util.Modules;
+
 import lombok.extern.slf4j.Slf4j;
+
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ResourceHandler;
@@ -70,7 +73,7 @@ public class DevhubServer {
 
 		HashSessionManager hashSessionManager = new HashSessionManager();
 		hashSessionManager.setMaxInactiveInterval(1800);
-
+		
 		DevhubHandler devhubHandler = new DevhubHandler(config, rootFolder, overrides);
 		devhubHandler.setHandler(new SessionHandler(hashSessionManager));
 
@@ -134,6 +137,7 @@ public class DevhubServer {
 					DevhubServer.this.injector.set(injector);
 					FilterHolder persistFilterHolder = new FilterHolder(injector.getInstance(PersistFilter.class));
 					addFilter(persistFilterHolder, "/*", EnumSet.allOf(DispatcherType.class));
+					addFilter(GuiceFilter.class, "/*", EnumSet.allOf(DispatcherType.class));
 				}
 			});
 			

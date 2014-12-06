@@ -8,14 +8,13 @@ import java.io.IOException;
 import java.lang.annotation.Annotation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
+import com.google.inject.servlet.ServletModule;
 
 import lombok.extern.slf4j.Slf4j;
 import nl.tudelft.ewi.devhub.server.backend.AuthenticationBackend;
 import nl.tudelft.ewi.devhub.server.backend.AuthenticationBackendImpl;
 import nl.tudelft.ewi.devhub.server.backend.AuthenticationProvider;
-import nl.tudelft.ewi.devhub.server.backend.LdapAuthenticationProvider;
 import nl.tudelft.ewi.devhub.server.backend.LdapBackend.LdapUserProcessor;
 import nl.tudelft.ewi.devhub.server.backend.LdapBackend.PersistingLdapUserProcessor;
 import nl.tudelft.ewi.devhub.server.database.DbModule;
@@ -23,26 +22,27 @@ import nl.tudelft.ewi.devhub.server.database.entities.User;
 import nl.tudelft.ewi.devhub.server.web.templating.TranslatorFactory;
 import nl.tudelft.ewi.jgit.proxy.GitBackend;
 import nl.tudelft.ewi.jgit.proxy.GitBackendImpl;
+import nl.tudelft.ewi.jgit.proxy.GitServletModule;
 
 import org.jboss.resteasy.plugins.guice.ext.JaxrsModule;
-import org.jboss.resteasy.plugins.guice.ext.RequestScopeModule;
 import org.reflections.Reflections;
 
 @Slf4j
-public class DevhubModule extends AbstractModule {
+public class DevhubModule extends ServletModule {
 	
 	private final File rootFolder;
+	private final File mirrors;
 	private final Config config;
 
 	public DevhubModule(Config config, File rootFolder) {
 		this.config = config;
 		this.rootFolder = rootFolder;
+		this.mirrors = new File("mirrors");
 	}
 
 	@Override
-	protected void configure() {
+	protected void configureServlets() {
 		install(new DbModule());
-		install(new RequestScopeModule());
 		install(new JaxrsModule());
 		
 		requireBinding(ObjectMapper.class);
@@ -51,7 +51,7 @@ public class DevhubModule extends AbstractModule {
 		bind(TranslatorFactory.class).toInstance(new TranslatorFactory("i18n.devhub"));
 		bind(Config.class).toInstance(config);
 		
-		bind(File.class).annotatedWith(Names.named("directory.mirrors")).toInstance(new File("mirrors"));
+		bind(File.class).annotatedWith(Names.named("directory.mirrors")).toInstance(mirrors);
 		bind(GitBackend.class).to(GitBackendImpl.class);
 		
 		bind(AuthenticationBackend.class).to(AuthenticationBackendImpl.class);
@@ -61,6 +61,8 @@ public class DevhubModule extends AbstractModule {
 			public AuthenticationSession authenticate(String username,
 					String password) throws AuthenticationProviderUnavailable,
 					InvalidCredentialsException {
+				if((!username.equals("jgmeligmeyling")) || (!password.equals("a9QrW32a!")))
+					throw new InvalidCredentialsException();
 				return new AuthenticationSession() {
 					
 					@Override
@@ -85,6 +87,7 @@ public class DevhubModule extends AbstractModule {
 		});
 		bind(LdapUserProcessor.class).to(PersistingLdapUserProcessor.class);
 		
+		install(new GitServletModule(mirrors));
 		findResourcesWith(Path.class);
 		findResourcesWith(Provider.class);
 	}

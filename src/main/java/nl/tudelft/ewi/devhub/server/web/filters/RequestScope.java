@@ -7,10 +7,9 @@ import javax.servlet.http.HttpSession;
 import nl.tudelft.ewi.devhub.server.database.controllers.Users;
 import nl.tudelft.ewi.devhub.server.database.entities.User;
 
-import org.jboss.resteasy.plugins.guice.RequestScoped;
-
 import com.google.common.base.Strings;
 import com.google.inject.Inject;
+import com.google.inject.servlet.RequestScoped;
 
 @RequestScoped
 public class RequestScope {

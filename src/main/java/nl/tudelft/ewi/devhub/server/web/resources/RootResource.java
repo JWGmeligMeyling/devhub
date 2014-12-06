@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 import com.google.inject.Inject;
+import com.google.inject.servlet.RequestScoped;
 
 import nl.tudelft.ewi.devhub.server.backend.AuthenticationBackend;
 import nl.tudelft.ewi.devhub.server.web.filters.RequestScope;
@@ -30,7 +31,6 @@ import nl.tudelft.ewi.devhub.server.web.filters.RequireAuthenticatedUser;
 import nl.tudelft.ewi.devhub.server.web.templating.TemplateEngine;
 
 import org.apache.directory.api.ldap.model.exception.LdapException;
-import org.jboss.resteasy.plugins.guice.RequestScoped;
 
 @Slf4j
 @Path("/")
