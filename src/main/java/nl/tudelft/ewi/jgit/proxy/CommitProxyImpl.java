@@ -1,13 +1,14 @@
 package nl.tudelft.ewi.jgit.proxy;
 
+import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import lombok.extern.slf4j.Slf4j;
 import nl.tudelft.ewi.git.models.DetailedCommitModel;
 import nl.tudelft.ewi.git.models.DiffModel;
 import nl.tudelft.ewi.git.models.EntryType;
@@ -15,6 +16,7 @@ import nl.tudelft.ewi.git.models.EntryType;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.DiffEntry;
+import org.eclipse.jgit.diff.DiffFormatter;
 import org.eclipse.jgit.diff.RawText;
 import org.eclipse.jgit.diff.RenameDetector;
 import org.eclipse.jgit.lib.ObjectId;
@@ -27,13 +29,13 @@ import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.AbstractTreeIterator;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
-import org.eclipse.jgit.treewalk.EmptyTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 
+@Slf4j
 public class CommitProxyImpl extends AbstractGitProxy implements CommitProxy {
 
 	private final DetailedCommitModel commit;
@@ -55,7 +57,7 @@ public class CommitProxyImpl extends AbstractGitProxy implements CommitProxy {
 	 * @see nl.tudelft.ewi.jgit.proxy.CommitProxy#getDiff()
 	 */
 	@Override
-	public Collection<DiffModel> getDiff() throws GitException, IOException {
+	public List<Diff> getDiff() throws GitException, IOException {
 		return getDiff(null);
 		
 	}
@@ -64,25 +66,20 @@ public class CommitProxyImpl extends AbstractGitProxy implements CommitProxy {
 	 * @see nl.tudelft.ewi.jgit.proxy.CommitProxy#getDiff(nl.tudelft.ewi.git.models.CommitModel)
 	 */
 	@Override
-	public Collection<DiffModel> getDiff(String other) throws GitException, IOException {
+	public List<Diff> getDiff(String other) throws GitException, IOException {
+		if(Objects.isNull(other)) {
+			other = commit.getCommit() + "^";
+		}
 		
 		final StoredConfig config = repo.getConfig();
 		config.setString("diff", null, "algorithm", "histogram");
 
 		try {
-			AbstractTreeIterator oldTreeIter = new EmptyTreeIterator();
-			if (!Objects.isNull(other)) {
-				oldTreeIter = createTreeParser( other);
-			}
-			AbstractTreeIterator newTreeIter = new EmptyTreeIterator();
-			if (!Objects.isNull(commit)) {
-				newTreeIter = createTreeParser(commit.getCommit());
-			}
-
+			
 			List<DiffEntry> diffs = git.diff()
 				.setContextLines(3)
-				.setOldTree(oldTreeIter)
-				.setNewTree(newTreeIter)
+				.setOldTree(createTreeParser(other))
+				.setNewTree(createTreeParser(commit.getCommit()))
 				.call();
 			
 			RenameDetector rd = new RenameDetector(repo);
@@ -90,7 +87,27 @@ public class CommitProxyImpl extends AbstractGitProxy implements CommitProxy {
 			diffs = rd.compute();
 			
 			return diffs.stream()
-				.map(MapEntryToDiff())
+				.map((input) -> {
+					ByteArrayOutputStream out = new ByteArrayOutputStream();
+					DiffFormatter formatter = new DiffFormatter(out);
+					formatter.setRepository(repo);
+
+					String contents = null;
+					try {
+						formatter.format(input);
+						contents = out.toString("UTF-8");
+					}
+					catch (IOException e) {
+						log.error(e.getMessage(), e);
+					}
+
+					DiffModel diff = new DiffModel();
+					diff.setType(forChangeType(input.getChangeType()));
+					diff.setOldPath(input.getOldPath());
+					diff.setNewPath(input.getNewPath());
+					diff.setRaw(contents.split("\\r?\\n"));
+					return new Diff(diff);
+				})
 				.collect(Collectors.toList());
 			
 		}

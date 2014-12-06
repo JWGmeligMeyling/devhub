@@ -1,7 +1,6 @@
 package nl.tudelft.ewi.devhub.server.web.resources;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -36,7 +35,6 @@ import nl.tudelft.ewi.devhub.server.database.entities.BuildResult;
 import nl.tudelft.ewi.devhub.server.database.entities.Course;
 import nl.tudelft.ewi.devhub.server.database.entities.Group;
 import nl.tudelft.ewi.devhub.server.database.entities.User;
-import nl.tudelft.ewi.devhub.server.util.DiffLine;
 import nl.tudelft.ewi.devhub.server.util.Highlight;
 import nl.tudelft.ewi.devhub.server.web.errors.ApiError;
 import nl.tudelft.ewi.devhub.server.web.errors.UnauthorizedException;
@@ -46,10 +44,10 @@ import nl.tudelft.ewi.devhub.server.web.templating.TemplateEngine;
 import nl.tudelft.ewi.git.models.DetailedBranchModel;
 import nl.tudelft.ewi.git.models.DetailedCommitModel;
 import nl.tudelft.ewi.git.models.DetailedRepositoryModel;
-import nl.tudelft.ewi.git.models.DiffModel;
 import nl.tudelft.ewi.git.models.EntryType;
 import nl.tudelft.ewi.jgit.proxy.BranchProxy;
 import nl.tudelft.ewi.jgit.proxy.CommitProxy;
+import nl.tudelft.ewi.jgit.proxy.Diff;
 import nl.tudelft.ewi.jgit.proxy.GitBackend;
 import nl.tudelft.ewi.jgit.proxy.GitException;
 import nl.tudelft.ewi.jgit.proxy.RepositoyProxy;
@@ -60,7 +58,6 @@ import org.eclipse.jgit.transport.resolver.ServiceNotAuthorizedException;
 import org.jboss.resteasy.plugins.guice.RequestScoped;
 
 import com.google.common.base.Strings;
-import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -428,8 +425,7 @@ public class ProjectsResource extends Resource {
 			DetailedRepositoryModel repository = repositoryProxy.getRepositoryModel();
 			CommitProxy commitProxy = repositoryProxy.getCommit(oldId);
 			DetailedCommitModel oldCommit = commitProxy.getCommitModel();
-			Collection<Diff> diffs = Collections2.transform(
-					commitProxy.getDiff(oldId), (a) -> new Diff(a));
+			List<Diff> diffs = commitProxy.getDiff(newId);
 
 			Map<String, Object> parameters = Maps.newLinkedHashMap();
 			parameters.put("user", scope.getUser());
@@ -605,43 +601,6 @@ public class ProjectsResource extends Resource {
 		catch (Throwable e) {
 			throw new ApiError("error.git-server-unavailable", e);
 		}
-	}
-
-	@Data
-	public static class Diff {
-		
-		private final List<DiffLine> lines;
-		private final DiffModel diffModel;
-		
-		public Diff(DiffModel diffModel) {
-			this.diffModel = diffModel;
-			this.lines = DiffLine.getLinesFor(diffModel);
-		}
-		
-		public static Diff of(DiffModel diffModel) {
-			return new Diff(diffModel);
-		}
-		
-		public boolean isDeleted() {
-			return diffModel.getType().equals(DiffModel.Type.DELETE);
-		}
-		
-		public boolean isAdded() {
-			return diffModel.getType().equals(DiffModel.Type.ADD);
-		}
-		
-		public boolean isModified() {
-			return diffModel.getType().equals(DiffModel.Type.MODIFY);
-		}
-		
-		public boolean isCopied() {
-			return diffModel.getType().equals(DiffModel.Type.COPY);
-		}
-		
-		public boolean isMoved() {
-			return diffModel.getType().equals(DiffModel.Type.RENAME);
-		}
-		
 	}
 
 	private List<User> getGroupMembers(HttpServletRequest request) {

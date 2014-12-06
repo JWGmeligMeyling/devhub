@@ -1,30 +1,23 @@
 package nl.tudelft.ewi.jgit.proxy;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.function.Function;
 import java.util.function.Predicate;
-
-import lombok.extern.slf4j.Slf4j;
 
 import org.eclipse.jgit.diff.DiffEntry;
 
 import nl.tudelft.ewi.git.models.BranchModel;
 import nl.tudelft.ewi.git.models.DetailedCommitModel;
-import nl.tudelft.ewi.git.models.DiffModel;
 import nl.tudelft.ewi.git.models.TagModel;
 import nl.tudelft.ewi.git.models.CommitModel;
 import nl.tudelft.ewi.git.models.DiffModel.Type;
 
 import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.diff.DiffFormatter;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 
-@Slf4j
 public abstract class AbstractGitProxy implements AutoCloseable {
 
 	protected final Git git;
@@ -105,30 +98,6 @@ public abstract class AbstractGitProxy implements AutoCloseable {
 		commit.setFullMessage(revCommit.getFullMessage());
 
 		return commit;
-	};
-	
-	public final Function<DiffEntry, DiffModel> MapEntryToDiff() {
-		return input -> {
-			ByteArrayOutputStream out = new ByteArrayOutputStream();
-			DiffFormatter formatter = new DiffFormatter(out);
-			formatter.setRepository(repo);
-
-			String contents = null;
-			try {
-				formatter.format(input);
-				contents = out.toString("UTF-8");
-			}
-			catch (IOException e) {
-				log.error(e.getMessage(), e);
-			}
-
-			DiffModel diff = new DiffModel();
-			diff.setType(forChangeType(input.getChangeType()));
-			diff.setOldPath(input.getOldPath());
-			diff.setNewPath(input.getNewPath());
-			diff.setRaw(contents.split("\\r?\\n"));
-			return diff;
-		};
 	};
 	
 	public static Type forChangeType(DiffEntry.ChangeType changeType) {

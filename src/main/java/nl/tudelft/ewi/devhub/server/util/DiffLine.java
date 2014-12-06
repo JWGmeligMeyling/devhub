@@ -74,7 +74,7 @@ public class DiffLine {
 		return getLinesFor(diffModel.getRaw());
 	}
 
-	private static List<DiffLine> getLinesFor(String[] raw) {
+	public static List<DiffLine> getLinesFor(String[] raw) {
 		List<DiffLine> lines = Lists.newArrayList();
 		int newLineNumber = 0;
 		int oldLineNumber = 0;
