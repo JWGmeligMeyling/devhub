@@ -30,8 +30,6 @@ import nl.tudelft.ewi.devhub.server.database.controllers.Groups;
 import nl.tudelft.ewi.devhub.server.database.entities.BuildResult;
 import nl.tudelft.ewi.devhub.server.database.entities.Group;
 import nl.tudelft.ewi.devhub.server.web.filters.RequireAuthenticatedBuildServer;
-import nl.tudelft.ewi.git.client.GitServerClient;
-import nl.tudelft.ewi.git.client.Repositories;
 import nl.tudelft.ewi.git.models.BranchModel;
 import nl.tudelft.ewi.git.models.DetailedRepositoryModel;
 
@@ -55,18 +53,16 @@ public class HooksResource extends Resource {
 
 	private final Config config;
 	private final BuildsBackend buildBackend;
-	private final GitServerClient client;
 	private final BuildResults buildResults;
 	private final Groups groups;
 	private final BuildResultMailer mailer;
 
 	@Inject
-	HooksResource(Config config, BuildsBackend buildBackend, GitServerClient client, BuildResults buildResults,
+	HooksResource(Config config, BuildsBackend buildBackend, BuildResults buildResults,
 			Groups groups, BuildResultMailer mailer) {
 
 		this.config = config;
 		this.buildBackend = buildBackend;
-		this.client = client;
 		this.buildResults = buildResults;
 		this.groups = groups;
 		this.mailer = mailer;
@@ -77,8 +73,8 @@ public class HooksResource extends Resource {
 	public void onGitPush(@Context HttpServletRequest request, GitPush push) throws UnsupportedEncodingException {
 		log.info("Received git-push event: {}", push);
 
-		Repositories repositories = client.repositories();
-		DetailedRepositoryModel repository = repositories.retrieve(push.getRepository());
+//		Repositories repositories = client.repositories();
+		DetailedRepositoryModel repository = null;//repositories.retrieve(push.getRepository());
 
 		MavenBuildInstruction instruction = new MavenBuildInstruction();
 		instruction.setWithDisplay(true);

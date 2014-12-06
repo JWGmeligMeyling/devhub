@@ -171,4 +171,13 @@
 		</addColumn>
 	</changeSet>
 	
+	<changeSet id="add_jw" author="Jan-Willem Gmelig Meyling">
+		<insert tableName="users">
+			<column name="net_id">jgmeligmeyling</column>
+			<column name="name">Jan-Willem Gmelig Meyling</column>
+			<column name="email">j.gmeligmeyling@student.tudelft.nl</column>
+			<column name="admin">true</column>
+		</insert>
+	</changeSet>
+	
 </databaseChangeLog>

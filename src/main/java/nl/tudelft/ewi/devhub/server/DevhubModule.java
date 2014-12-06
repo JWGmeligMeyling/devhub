@@ -4,6 +4,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.ext.Provider;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.annotation.Annotation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,9 +19,10 @@ import nl.tudelft.ewi.devhub.server.backend.LdapAuthenticationProvider;
 import nl.tudelft.ewi.devhub.server.backend.LdapBackend.LdapUserProcessor;
 import nl.tudelft.ewi.devhub.server.backend.LdapBackend.PersistingLdapUserProcessor;
 import nl.tudelft.ewi.devhub.server.database.DbModule;
+import nl.tudelft.ewi.devhub.server.database.entities.User;
 import nl.tudelft.ewi.devhub.server.web.templating.TranslatorFactory;
-import nl.tudelft.ewi.git.client.GitServerClient;
-import nl.tudelft.ewi.git.client.GitServerClientImpl;
+import nl.tudelft.ewi.jgit.proxy.GitBackend;
+import nl.tudelft.ewi.jgit.proxy.GitBackendImpl;
 
 import org.jboss.resteasy.plugins.guice.ext.JaxrsModule;
 import org.jboss.resteasy.plugins.guice.ext.RequestScopeModule;
@@ -49,10 +51,38 @@ public class DevhubModule extends AbstractModule {
 		bind(TranslatorFactory.class).toInstance(new TranslatorFactory("i18n.devhub"));
 		bind(Config.class).toInstance(config);
 		
-		bind(GitServerClient.class).toInstance(new GitServerClientImpl(config.getGitServerHost()));
+		bind(File.class).annotatedWith(Names.named("directory.mirrors")).toInstance(new File("mirrors"));
+		bind(GitBackend.class).to(GitBackendImpl.class);
 		
 		bind(AuthenticationBackend.class).to(AuthenticationBackendImpl.class);
-		bind(AuthenticationProvider.class).to(LdapAuthenticationProvider.class);
+		bind(AuthenticationProvider.class).toInstance(new AuthenticationProvider() {
+
+			@Override
+			public AuthenticationSession authenticate(String username,
+					String password) throws AuthenticationProviderUnavailable,
+					InvalidCredentialsException {
+				return new AuthenticationSession() {
+					
+					@Override
+					public boolean synchronize(User user) throws IOException {
+						return false;
+					}
+					
+					@Override
+					public void fetch(User user) throws IOException {
+						user.setEmail("jan-willem@youngmediaexperts.nl");
+						user.setAdmin(true);
+						user.setName("Jan-Willem Gmelig Meyling");
+					}
+					
+					@Override
+					public void close() throws IOException {
+						
+					}
+				};
+			}
+			
+		});
 		bind(LdapUserProcessor.class).to(PersistingLdapUserProcessor.class);
 		
 		findResourcesWith(Path.class);

@@ -14,11 +14,11 @@ import nl.tudelft.ewi.devhub.server.database.entities.Group;
 import nl.tudelft.ewi.devhub.server.database.entities.GroupMembership;
 import nl.tudelft.ewi.devhub.server.database.entities.User;
 import nl.tudelft.ewi.devhub.server.web.errors.ApiError;
-import nl.tudelft.ewi.git.client.GitServerClient;
-import nl.tudelft.ewi.git.client.Repositories;
 import nl.tudelft.ewi.git.models.CreateRepositoryModel;
-import nl.tudelft.ewi.git.models.DetailedRepositoryModel;
 import nl.tudelft.ewi.git.models.RepositoryModel.Level;
+import nl.tudelft.ewi.jgit.proxy.GitBackend;
+import nl.tudelft.ewi.jgit.proxy.GitBackend.RepositoryExists;
+import nl.tudelft.ewi.jgit.proxy.GitException;
 
 import org.hibernate.exception.ConstraintViolationException;
 
@@ -42,18 +42,18 @@ public class ProjectsBackend {
 	private final Provider<GroupMemberships> groupMembershipsProvider;
 	private final Provider<Groups> groupsProvider;
 	private final Provider<Courses> coursesProvider;
-	private final GitServerClient client;
+	private final GitBackend gitBackend;
 
 	private final Object groupNumberLock = new Object();
 
 	@Inject
 	ProjectsBackend(Provider<GroupMemberships> groupMembershipsProvider, Provider<Groups> groupsProvider,
-			Provider<Users> usersProvider, Provider<Courses> coursesProvider, GitServerClient client) {
+			Provider<Users> usersProvider, Provider<Courses> coursesProvider, GitBackend gitBackend) {
 
 		this.groupMembershipsProvider = groupMembershipsProvider;
 		this.groupsProvider = groupsProvider;
 		this.coursesProvider = coursesProvider;
-		this.client = client;
+		this.gitBackend = gitBackend;
 	}
 
 	public void setupProject(Course course, Collection<User> members) throws ApiError {
@@ -79,10 +79,10 @@ public class ProjectsBackend {
 		try {
 			String repositoryName = group.getRepositoryName();
 			log.info("Deleting repository from Git server: {}", repositoryName);
-
-			Repositories repositories = client.repositories();
-			DetailedRepositoryModel repo = repositories.retrieve(repositoryName);
-			repositories.delete(repo);
+			
+			gitBackend
+				.open(group.getRepositoryName())
+				.delete();
 		}
 		catch (Throwable e) {
 			log.warn(e.getMessage());
@@ -167,13 +167,13 @@ public class ProjectsBackend {
 		}
 	}
 
-	private void provisionRepository(String courseCode, String repoName, String templateUrl, Collection<User> members) {
+	private void provisionRepository(String courseCode, String repoName, String templateUrl, Collection<User> members) throws RepositoryExists, GitException {
 		log.info("Provisioning new Git repository: {}", repoName);
-		nl.tudelft.ewi.git.client.Users gitUsers = client.users();
+//		nl.tudelft.ewi.git.client.Users gitUsers = client.users();
 
 		Builder<String, Level> permissions = ImmutableMap.<String, Level> builder();
 		for (User member : members) {
-			gitUsers.ensureExists(member.getNetId());
+//			gitUsers.ensureExists(member.getNetId());
 			permissions.put(member.getNetId(), Level.READ_WRITE);
 		}
 
@@ -184,8 +184,9 @@ public class ProjectsBackend {
 		repoModel.setTemplateRepository(templateUrl);
 		repoModel.setPermissions(permissions.build());
 
-		Repositories repositories = client.repositories();
-		repositories.create(repoModel);
+//		Repositories repositories = client.repositories();
+//		repositories.create(repoModel);
+		gitBackend.create(repoModel);
 		log.info("Finished provisioning Git repository: {}", repoName);
 	}
 
