@@ -5,7 +5,6 @@ import java.util.function.Predicate;
 
 import org.eclipse.jgit.diff.DiffEntry;
 
-import nl.tudelft.ewi.git.models.BranchModel;
 import nl.tudelft.ewi.git.models.DetailedCommitModel;
 import nl.tudelft.ewi.git.models.TagModel;
 import nl.tudelft.ewi.git.models.CommitModel;
@@ -32,17 +31,6 @@ public abstract class AbstractGitProxy implements AutoCloseable {
 		return !ref.getName().equals("refs/remotes/origin/HEAD");
 	};
 	
-	public final static Function<Ref, BranchModel> MAP_REF_TO_BRANCH = (input) -> {
-		final String name = input.getName();
-		final ObjectId objectId = input.getObjectId();
-
-		final BranchModel branch = new BranchModel();
-		branch.setCommit(objectId.getName());
-		branch.setName(name);
-		return branch;
-	};
-	
-
 	public final static Function<Ref, TagModel> MAP_REF_TO_TAG = (input) -> {
 		final TagModel tag = new TagModel();
 		ObjectId objectId = input.getPeeledObjectId();

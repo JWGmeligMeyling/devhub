@@ -56,8 +56,8 @@
 			<table class="table table-bordered">
 				<tbody>
 [#if repository?? && repository?has_content]
-	[#if branch?? && branch?has_content && branch.getCommits()?has_content]
-		[#list branch.getCommits() as commit]
+	[#if branch?? && branch?has_content && commits?? && commits?has_content]
+		[#list commits as commit]
 					<tr>
 			[#if states.hasStarted(commit.getCommit())]
 				[#if states.hasFinished(commit.getCommit())]

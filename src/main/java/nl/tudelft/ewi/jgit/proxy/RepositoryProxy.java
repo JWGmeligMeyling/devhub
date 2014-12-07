@@ -4,7 +4,6 @@ import java.io.File;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import nl.tudelft.ewi.git.models.BranchModel;
 import nl.tudelft.ewi.git.models.DetailedCommitModel;
 import nl.tudelft.ewi.git.models.TagModel;
 
@@ -36,12 +35,12 @@ public class RepositoryProxy extends AbstractGitProxy {
 		return "https://localhost/remote/".concat(path);
 	}
 	
-	public List<BranchModel> getBranches() throws GitException {
+	public List<BranchProxy> getBranches() throws GitException {
 		try {
 			return git.branchList()
 				.call().stream()
 				.filter(SKIP_HEAD)
-				.map(MAP_REF_TO_BRANCH)
+				.map((ref) -> new BranchProxy(git, ref))
 				.collect(Collectors.toList());
 		}
 		catch (GitAPIException e) {
@@ -51,12 +50,11 @@ public class RepositoryProxy extends AbstractGitProxy {
 	
 	public BranchProxy getBranch(final String branchName) throws GitException {
 		try {
-			BranchModel branchModel =  git.branchList()
+			return git.branchList()
 				.call().stream()
 				.filter((ref) -> ref.getName().contains(branchName))
-				.map(MAP_REF_TO_BRANCH)
+				.map((ref) -> new BranchProxy(git, ref))
 				.findAny().get();
-			return new BranchProxyImpl(git, branchModel);
 		}
 		catch (GitAPIException e) {
 			throw new GitException(e);

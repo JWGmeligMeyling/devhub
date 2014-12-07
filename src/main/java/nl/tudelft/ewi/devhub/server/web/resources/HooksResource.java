@@ -2,7 +2,6 @@ package nl.tudelft.ewi.devhub.server.web.resources;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
-import java.net.URLEncoder;
 import java.util.Locale;
 
 import javax.inject.Inject;
@@ -18,10 +17,7 @@ import javax.ws.rs.core.MediaType;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import nl.tudelft.ewi.build.jaxrs.models.BuildRequest;
 import nl.tudelft.ewi.build.jaxrs.models.BuildResult.Status;
-import nl.tudelft.ewi.build.jaxrs.models.GitSource;
-import nl.tudelft.ewi.build.jaxrs.models.MavenBuildInstruction;
 import nl.tudelft.ewi.devhub.server.Config;
 import nl.tudelft.ewi.devhub.server.backend.BuildResultMailer;
 import nl.tudelft.ewi.devhub.server.backend.BuildsBackend;
@@ -30,7 +26,6 @@ import nl.tudelft.ewi.devhub.server.database.controllers.Groups;
 import nl.tudelft.ewi.devhub.server.database.entities.BuildResult;
 import nl.tudelft.ewi.devhub.server.database.entities.Group;
 import nl.tudelft.ewi.devhub.server.web.filters.RequireAuthenticatedBuildServer;
-import nl.tudelft.ewi.git.models.BranchModel;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
