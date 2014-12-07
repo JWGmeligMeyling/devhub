@@ -76,17 +76,17 @@ public class ProjectsBackend {
 	}
 
 	private void deleteRepositoryFromGit(Group group) {
-		try {
-			String repositoryName = group.getRepositoryName();
-			log.info("Deleting repository from Git server: {}", repositoryName);
-			
-			gitBackend
-				.open(group.getRepositoryName())
-				.delete();
-		}
-		catch (Throwable e) {
-			log.warn(e.getMessage());
-		}
+//		try {
+//			String repositoryName = group.getRepositoryName();
+//			log.info("Deleting repository from Git server: {}", repositoryName);
+//			
+//			gitBackend
+//				.open(group.getRepositoryName())
+//				.delete();
+//		}
+//		catch (Throwable e) {
+//			log.warn(e.getMessage());
+//		}
 	}
 
 	@Transactional

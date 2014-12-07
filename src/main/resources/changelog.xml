@@ -180,4 +180,20 @@
 		</insert>
 	</changeSet>
 	
+	<changeSet id="add_ssh_keys_table" author="Jan-Willem Gmelig Meyling">
+		<createTable tableName="ssh_keys">
+			<column name="user_id" type="bigint">
+				<constraints primaryKey="true" nullable="false" />
+			</column>
+			<column name="name" type="varchar(128)">
+				<constraints primaryKey="true" nullable="false" />
+			</column>
+			<column name="contents" type="text" />
+		</createTable>
+		
+		<addForeignKeyConstraint constraintName="user_ref_in_ssh_keys"
+			baseTableName="ssh_keys" baseColumnNames="user_id"
+			referencedTableName="users" referencedColumnNames="id" />
+	</changeSet>
+	
 </databaseChangeLog>

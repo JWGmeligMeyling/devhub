@@ -273,7 +273,7 @@ public class ProjectsResource extends Resource {
 			throw new UnauthorizedException();
 		}
 		
-		try(RepositoyProxy repositoryProxy = gitBackend.open(group.getRepositoryName())) {
+		try(RepositoyProxy repositoryProxy = gitBackend.open(user, group.getRepositoryName())) {
 			DetailedBranchModel branch;
 			
 			try {
@@ -317,7 +317,7 @@ public class ProjectsResource extends Resource {
 			throw new UnauthorizedException();
 		}
 		
-		try(RepositoyProxy repositoryProxy = gitBackend.open(group.getRepositoryName())) {
+		try(RepositoyProxy repositoryProxy = gitBackend.open(user, group.getRepositoryName())) {
 			
 			DetailedRepositoryModel repository = repositoryProxy.getRepositoryModel();
 			DetailedBranchModel branch = fetchBranch(repositoryProxy, branchName, page);
@@ -372,7 +372,7 @@ public class ProjectsResource extends Resource {
 			throw new UnauthorizedException();
 		}
 
-		try(RepositoyProxy repositoryProxy = gitBackend.open(group.getRepositoryName())) {
+		try(RepositoyProxy repositoryProxy = gitBackend.open(user, group.getRepositoryName())) {
 			
 			DetailedRepositoryModel repository = repositoryProxy.getRepositoryModel();
 			DetailedCommitModel commit = repositoryProxy.getCommit(commitId).getCommitModel();
@@ -420,7 +420,7 @@ public class ProjectsResource extends Resource {
 			throw new UnauthorizedException();
 		}
 
-		try(RepositoyProxy repositoryProxy = gitBackend.open(group.getRepositoryName())) {
+		try(RepositoyProxy repositoryProxy = gitBackend.open(user, group.getRepositoryName())) {
 			
 			DetailedRepositoryModel repository = repositoryProxy.getRepositoryModel();
 			CommitProxy commitProxy = repositoryProxy.getCommit(oldId);
@@ -476,7 +476,7 @@ public class ProjectsResource extends Resource {
 			throw new UnauthorizedException();
 		}
 		
-		try(RepositoyProxy repositoryProxy = gitBackend.open(group.getRepositoryName())) {
+		try(RepositoyProxy repositoryProxy = gitBackend.open(user, group.getRepositoryName())) {
 
 			DetailedRepositoryModel repository = repositoryProxy.getRepositoryModel();
 			Map<String, EntryType> entries = new TreeMap<>(new Comparator<String>() {
@@ -543,7 +543,7 @@ public class ProjectsResource extends Resource {
 			fileName = path.substring(path.lastIndexOf('/') + 1);
 		}
 		
-		try(RepositoyProxy repositoryProxy = gitBackend.open(group.getRepositoryName())) {
+		try(RepositoyProxy repositoryProxy = gitBackend.open(user, group.getRepositoryName())) {
 
 			DetailedRepositoryModel repository = repositoryProxy.getRepositoryModel();
 			CommitProxy commitProxy = repositoryProxy.getCommit(commitId);

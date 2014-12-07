@@ -47,13 +47,15 @@ public class DevhubModule extends ServletModule {
 		
 		requireBinding(ObjectMapper.class);
 		
-		bind(File.class).annotatedWith(Names.named("directory.templates")).toInstance(new File(rootFolder, "templates"));
-		bind(TranslatorFactory.class).toInstance(new TranslatorFactory("i18n.devhub"));
 		bind(Config.class).toInstance(config);
-		
+		bind(File.class).annotatedWith(Names.named("directory.templates")).toInstance(new File(rootFolder, "templates"));
 		bind(File.class).annotatedWith(Names.named("directory.mirrors")).toInstance(mirrors);
-		bind(GitBackend.class).to(GitBackendImpl.class);
+		bind(File.class).annotatedWith(Names.named("jgit.sshd.certDir")).toInstance(new File("certs"));
+		bind(Integer.class).annotatedWith(Names.named("jgit.sshd.port")).toInstance(2223);
+		bind(String.class).annotatedWith(Names.named("jgit.sshd.host")).toInstance("localhost");
 		
+		bind(TranslatorFactory.class).toInstance(new TranslatorFactory("i18n.devhub"));
+		bind(GitBackend.class).to(GitBackendImpl.class);
 		bind(AuthenticationBackend.class).to(AuthenticationBackendImpl.class);
 		bind(AuthenticationProvider.class).toInstance(new AuthenticationProvider() {
 
@@ -87,7 +89,8 @@ public class DevhubModule extends ServletModule {
 		});
 		bind(LdapUserProcessor.class).to(PersistingLdapUserProcessor.class);
 		
-		install(new GitServletModule(mirrors));
+		install(new GitServletModule());
+	      
 		findResourcesWith(Path.class);
 		findResourcesWith(Provider.class);
 	}

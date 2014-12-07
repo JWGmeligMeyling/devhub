@@ -2,6 +2,8 @@ package nl.tudelft.ewi.jgit.proxy;
 
 import java.util.List;
 
+import org.eclipse.jgit.lib.Repository;
+
 import nl.tudelft.ewi.git.models.BranchModel;
 import nl.tudelft.ewi.git.models.DetailedRepositoryModel;
 import nl.tudelft.ewi.git.models.TagModel;
@@ -20,6 +22,8 @@ public interface RepositoyProxy extends AutoCloseable {
 	 void delete();
 
 	 DetailedRepositoryModel getRepositoryModel() throws GitException;
+	 
+	 Repository getRepository();
 	 
 	 void close();
 

@@ -2,102 +2,76 @@ package nl.tudelft.ewi.devhub.server.backend;
 
 import java.util.List;
 
-import com.google.common.collect.ImmutableList;
+import javax.persistence.EntityNotFoundException;
 
+import com.google.inject.Inject;
+
+import nl.tudelft.ewi.devhub.server.database.controllers.SshKeys;
+import nl.tudelft.ewi.devhub.server.database.entities.SshKey;
 import nl.tudelft.ewi.devhub.server.database.entities.User;
 import nl.tudelft.ewi.devhub.server.web.errors.ApiError;
-import nl.tudelft.ewi.git.models.SshKeyModel;
 
 public class SshKeyBackend {
 
-//	private static final String COULD_NOT_CONNECT = "error.git-server-unavailable";
-//	private static final String DUPLICATE_KEY = "error.duplicate-key";
-//	private static final String INVALID_KEY_CONTENTS = "error.invalid-key-contents";
-//	private static final String INVALID_KEY_NAME = "error.invalid-key-name";
-//	private static final String NAME_ALREADY_EXISTS = "error.name-alread-exists";
-//	private static final String NO_SUCH_KEY = "error.no-such-key";
+	private static final String DUPLICATE_KEY = "error.duplicate-key";
+	private static final String INVALID_KEY_CONTENTS = "error.invalid-key-contents";
+	private static final String INVALID_KEY_NAME = "error.invalid-key-name";
+	private static final String NAME_ALREADY_EXISTS = "error.name-alread-exists";
+	private static final String NO_SUCH_KEY = "error.no-such-key";
 
-//	private final GitServerClient client;
-//
-//	@Inject
-//	SshKeyBackend(GitServerClient client) {
-//		this.client = client;
-//	}
+	private final SshKeys sshKeys;
+
+	@Inject
+	SshKeyBackend(final SshKeys sshKeys) {
+		this.sshKeys = sshKeys;
+	}
 
 	public void createNewSshKey(User user, String name, String contents) throws ApiError {
-//		if (name == null || !name.matches("^[a-zA-Z0-9]+$")) {
-//			throw new ApiError(INVALID_KEY_NAME);
-//		}
-//		if (contents == null || !contents.matches("^ssh-rsa\\s.+\\s*$")) {
-//			throw new ApiError(INVALID_KEY_CONTENTS);
-//		}
-//
-//		UserModel userModel = fetchUser(user.getNetId());
-//		for (SshKeyModel sshKeyModel : userModel.getKeys()) {
-//			if (sshKeyModel.getName()
-//				.equals(name)) {
-//				throw new ApiError(NAME_ALREADY_EXISTS);
-//			}
-//			if (sshKeyModel.getContents()
-//				.equals(contents.trim())) {
-//				throw new ApiError(DUPLICATE_KEY);
-//			}
-//		}
-//
-//		SshKeyModel model = new SshKeyModel();
-//		model.setName(name);
-//		model.setContents(contents.trim());
-//		client.users()
-//			.sshKeys(userModel)
-//			.registerSshKey(model);
+		if (name == null || !name.matches("^[a-zA-Z0-9]+$")) {
+			throw new ApiError(INVALID_KEY_NAME);
+		}
+		if (contents == null || !contents.matches("^ssh-rsa\\s.+\\s*$")) {
+			throw new ApiError(INVALID_KEY_CONTENTS);
+		}
+		
+		for(SshKey key : sshKeys.getKeysFor(user)) {
+			if(key.getContents().equals(contents)) {
+				throw new ApiError(DUPLICATE_KEY);
+			}
+			else if (key.getName().equals(name)) {
+				throw new ApiError(NAME_ALREADY_EXISTS);
+			}
+		}
+
+		SshKey key = new SshKey();
+		key.setUser(user);
+		key.setName(name);
+		key.setContents(contents);
+		
+		try {
+			sshKeys.persist(key);
+		}
+		catch (Throwable t) {
+			throw new ApiError(INVALID_KEY_CONTENTS, t);
+		}
 	}
 
 	public void deleteSshKey(User user, String name) throws ApiError {
-//		if (name == null || !name.matches("^[a-zA-Z0-9]+$")) {
-//			throw new ApiError(INVALID_KEY_NAME);
-//		}
-//
-//		SshKeyModel keyModel = null;
-//		UserModel userModel = fetchUser(user.getNetId());
-//		for (SshKeyModel sshKeyModel : userModel.getKeys()) {
-//			if (sshKeyModel.getName()
-//				.equals(name)) {
-//				keyModel = sshKeyModel;
-//			}
-//		}
-//
-//		if (keyModel == null) {
-//			throw new ApiError(NO_SUCH_KEY);
-//		}
-//
-//		client.users()
-//			.sshKeys(userModel)
-//			.deleteSshKey(keyModel);
+		if (name == null || !name.matches("^[a-zA-Z0-9]+$")) {
+			throw new ApiError(INVALID_KEY_NAME);
+		}
+		
+		try {
+			SshKey key = sshKeys.getKey(user, name);
+			sshKeys.delete(key);
+		}
+		catch (EntityNotFoundException e) {
+			throw new ApiError(NO_SUCH_KEY, e);
+		}
 	}
 
-	public List<SshKeyModel> listKeys(User user) throws ApiError {
-		return ImmutableList.of();
-//		UserModel userModel = fetchUser(user.getNetId());
-//		List<SshKeyModel> keys = Lists.newArrayList(userModel.getKeys());
-//		Collections.sort(keys, new Comparator<SshKeyModel>() {
-//			@Override
-//			public int compare(SshKeyModel o1, SshKeyModel o2) {
-//				return o1.getName()
-//					.compareTo(o2.getName());
-//			}
-//		});
-//
-//		return keys;
+	public List<SshKey> listKeys(User user) throws ApiError {
+		return sshKeys.getKeysFor(user);
 	}
-
-//	private UserModel fetchUser(String netId) throws ApiError {
-//		try {
-//			Users users = client.users();
-//			return users.ensureExists(netId);
-//		}
-//		catch (Throwable e) {
-//			throw new ApiError(COULD_NOT_CONNECT);
-//		}
-//	}
 
 }

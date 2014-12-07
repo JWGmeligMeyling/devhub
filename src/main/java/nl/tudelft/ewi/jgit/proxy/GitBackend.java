@@ -1,7 +1,6 @@
 package nl.tudelft.ewi.jgit.proxy;
 
-import java.io.IOException;
-
+import nl.tudelft.ewi.devhub.server.database.entities.User;
 import nl.tudelft.ewi.git.models.CreateRepositoryModel;
 
 import org.eclipse.jgit.errors.RepositoryNotFoundException;
@@ -12,8 +11,8 @@ import com.google.inject.ImplementedBy;
 @ImplementedBy(GitBackendImpl.class)
 public interface GitBackend {
 
-	RepositoyProxy open(String path) throws RepositoryNotFoundException,
-			ServiceNotAuthorizedException, IOException;
+	RepositoyProxy open(User user, String path) throws RepositoryNotFoundException,
+			ServiceNotAuthorizedException;
 	
 	void create(CreateRepositoryModel repoModel) throws RepositoryExists, GitException;
 	

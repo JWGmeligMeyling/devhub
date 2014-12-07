@@ -6,4 +6,5 @@ bin/
 .classpath
 target/
 mirrors/
+certs/
 *.db

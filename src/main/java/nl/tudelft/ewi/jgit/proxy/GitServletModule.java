@@ -1,18 +1,13 @@
 package nl.tudelft.ewi.jgit.proxy;
 
-import java.io.File;
-import java.io.IOException;
-
-import javax.persistence.EntityNotFoundException;
 import javax.servlet.http.HttpServletRequest;
 
 import lombok.extern.slf4j.Slf4j;
 import nl.tudelft.ewi.devhub.server.database.controllers.Groups;
-import nl.tudelft.ewi.devhub.server.database.entities.Group;
 import nl.tudelft.ewi.devhub.server.database.entities.User;
 import nl.tudelft.ewi.devhub.server.web.filters.BasicAuthFilter;
+import nl.tudelft.jgit.sshd.GitSSHModule;
 
-import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.errors.RepositoryNotFoundException;
 import org.eclipse.jgit.http.server.GitFilter;
 import org.eclipse.jgit.http.server.glue.MetaServlet;
@@ -30,28 +25,21 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.google.inject.name.Named;
 import com.google.inject.servlet.ServletModule;
 
 @Slf4j
 public class GitServletModule extends ServletModule {
 	
-	private final File mirrors;
-	
-	@Inject
-	public GitServletModule(@Named("directory.mirrors") final File mirrors) {
-		this.mirrors = mirrors;
-	}
-
 	@Override
 	protected void configureServlets() {
 		filter("/remote/*").through(BasicAuthFilter.class);
 		serve("/remote/*").with(GitServlet.class);
+		install(new GitSSHModule());
 	}
 	
 	@Provides
 	public RepositoryResolver<HttpServletRequest> getRepositoryResolver(
-			final Provider<Groups> groupsProvider) {
+			final Provider<GitBackend> gitBackendProvider) {
 		return new RepositoryResolver<HttpServletRequest>() {
 			public Repository open(HttpServletRequest req, String repoName)
 					throws RepositoryNotFoundException,
@@ -70,29 +58,9 @@ public class GitServletModule extends ServletModule {
 					throw new ServiceNotAuthorizedException();
 				}
 				
-				Group group;
-				
-				try {
-					group = groupsProvider.get().findByRepoName(repoName);
-				} catch (EntityNotFoundException e) {
-					log.debug("Group could not be found for repository {}", repoName);
-					throw new RepositoryNotFoundException(repoName, e);
-				}
-				
-				if(!group.getMembers().contains(user)) {
-					log.debug("User {} is not a member of group {}", user, group);
-					throw new ServiceNotEnabledException();
-				}
-				
-				final File folder = new File(mirrors, repoName);
-				
-				try {
-					return Git.open(folder).getRepository();
-				}
-				catch (IOException e) {
-					log.debug("Repository could not be found in folder {}", folder);
-					throw new RepositoryNotFoundException(folder, e);
-				}
+				return gitBackendProvider.get()
+					.open(user, repoName)
+					.getRepository();
 			}
 		};
 	}

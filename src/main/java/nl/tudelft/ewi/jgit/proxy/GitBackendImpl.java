@@ -4,12 +4,18 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 
+import javax.persistence.EntityNotFoundException;
+
 import lombok.extern.slf4j.Slf4j;
+import nl.tudelft.ewi.devhub.server.database.controllers.Groups;
+import nl.tudelft.ewi.devhub.server.database.entities.Group;
+import nl.tudelft.ewi.devhub.server.database.entities.User;
 import nl.tudelft.ewi.git.models.CreateRepositoryModel;
 
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.errors.RepositoryNotFoundException;
 import org.eclipse.jgit.transport.resolver.ServiceNotAuthorizedException;
 
 import com.google.common.base.Preconditions;
@@ -20,21 +26,43 @@ import com.google.inject.name.Named;
 public class GitBackendImpl implements GitBackend {
 	
 	private final File root;
+	private final Groups groups;
 	
 	@Inject
-	public GitBackendImpl(@Named("directory.mirrors") final File root) {
+	public GitBackendImpl(@Named("directory.mirrors") final File root, final Groups groups) {
 		this.root = root;
+		this.groups = groups;
 	}
 
 	@Override
-	public RepositoyProxy open(String path) throws ServiceNotAuthorizedException, IOException {
+	public RepositoyProxy open(User user, String repoName) throws ServiceNotAuthorizedException, RepositoryNotFoundException {
 
 		final Path rootPath = root.toPath();
-		final Path newPath = rootPath.resolve(path);
-		File folder = newPath.toFile();
-		Git git = Git.open(folder);
+		final Path newPath = rootPath.resolve(repoName);
 		
-		return new RepositoryProxyImpl(git, path);
+		Group group;
+		
+		try {
+			group = groups.findByRepoName(repoName);
+		} catch (EntityNotFoundException e) {
+			log.debug("Group could not be found for repository {}", repoName);
+			throw new RepositoryNotFoundException(repoName, e);
+		}
+		
+		if(!group.getMembers().contains(user)) {
+			log.debug("User {} is not a member of group {}", user, group);
+			throw new ServiceNotAuthorizedException();
+		}
+		
+		File folder = newPath.toFile();
+		
+		try {
+			Git git = Git.open(folder);
+			return new RepositoryProxyImpl(git, repoName);
+		}
+		catch (IOException e) {
+			throw new RepositoryNotFoundException(folder, e);
+		}
 	}
 
 	@Override
