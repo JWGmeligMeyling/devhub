@@ -21,7 +21,7 @@ public class Groups extends Controller<Group> {
 	@Transactional
 	public Group findByRepoName(String repoName) {
 		Group group = query().from(QGroup.group)
-			.where(QGroup.group.repositoryName.eq(repoName))
+			.where(QGroup.group.repositoryName.equalsIgnoreCase(repoName))
 			.singleResult(QGroup.group);
 
 		return ensureNotNull(group, "Could not find group by repository name: " + repoName);

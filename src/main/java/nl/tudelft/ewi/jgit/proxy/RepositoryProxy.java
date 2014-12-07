@@ -30,10 +30,6 @@ public class RepositoryProxy extends AbstractGitProxy {
 		return path;
 	}
 	
-	public String getUrl() {
-		return "https://localhost/remote/".concat(path);
-	}
-	
 	public List<BranchProxy> getBranches() throws GitException {
 		try {
 			return git.branchList()

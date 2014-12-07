@@ -1,8 +1,11 @@
 package nl.tudelft.ewi.devhub.server;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Properties;
+
+import org.apache.directory.ldap.client.api.LdapConnectionConfig;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -124,6 +127,52 @@ public class Config {
 	 */
 	public String getLDAPPrimaryDomain() {
 		return properties.getProperty("ldap.primarydomain");
+	}
+	
+	/**
+	 * @return the format for the clone url
+	 */
+	public String getCloneUrl() {
+		return properties.getProperty("clone.url.template");
+	}
+	
+	/**
+	 * @return the {@link LdapConnectionConfig}
+	 */
+	public LdapConnectionConfig getLdapConnectionConfig() {
+		final LdapConnectionConfig ldap = new LdapConnectionConfig();
+		ldap.setLdapHost(getLDAPHost());
+		ldap.setLdapPort(getLDAPPort());
+		ldap.setUseSsl(isLDAPSSL());
+		return ldap;
+	}
+
+	/**
+	 * @return the host name for the SSH daemon
+	 */
+	public String getSSHHost() {
+		return properties.getProperty("jgit.sshd.host", "localhost");
+	}
+	
+	/**
+	 * @return the port for the SSH daemon
+	 */
+	public Integer getSSHPort() {
+		return Integer.parseInt(properties.getProperty("jgit.sshd.port", " 2223"));
+	}
+
+	/**
+	 * @return the certificate directory for the SSH daemon
+	 */
+	public File getSSHCertDir() {
+		return new File(properties.getProperty("jgit.sshd.certDir", "certs"));
+	}
+
+	/**
+	 * @return the mirrors directory for the git server
+	 */
+	public File getMirrorsDir() {
+		return new File(properties.getProperty("jgit.sshd.mirrors", "mirrors"));
 	}
 
 }

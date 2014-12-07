@@ -92,6 +92,8 @@ public class GitBackendImpl implements GitBackend {
 				throws RepositoryNotFoundException,
 				ServiceNotAuthorizedException {
 			
+			Preconditions.checkNotNull(user);
+			
 			Group group;
 			
 			try {
@@ -101,7 +103,8 @@ public class GitBackendImpl implements GitBackend {
 				throw new RepositoryNotFoundException(repoName, e);
 			}
 			
-			if(!group.getMembers().contains(user)) {
+			if (!user.isAdmin() && !user.isAssisting(group.getCourse())
+					&& !user.isMemberOf(group)) {
 				log.debug("User {} is not a member of group {}", user, group);
 				throw new ServiceNotAuthorizedException();
 			}

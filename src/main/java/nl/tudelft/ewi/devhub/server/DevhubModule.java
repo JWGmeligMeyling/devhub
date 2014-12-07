@@ -4,7 +4,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.ext.Provider;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.annotation.Annotation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,10 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 import nl.tudelft.ewi.devhub.server.backend.AuthenticationBackend;
 import nl.tudelft.ewi.devhub.server.backend.AuthenticationBackendImpl;
 import nl.tudelft.ewi.devhub.server.backend.AuthenticationProvider;
-import nl.tudelft.ewi.devhub.server.backend.LdapBackend.LdapUserProcessor;
-import nl.tudelft.ewi.devhub.server.backend.LdapBackend.PersistingLdapUserProcessor;
+import nl.tudelft.ewi.devhub.server.backend.LdapAuthenticationProvider;
 import nl.tudelft.ewi.devhub.server.database.DbModule;
-import nl.tudelft.ewi.devhub.server.database.entities.User;
 import nl.tudelft.ewi.devhub.server.web.templating.TranslatorFactory;
 import nl.tudelft.ewi.jgit.proxy.GitBackend;
 import nl.tudelft.ewi.jgit.proxy.GitBackendImpl;
@@ -31,70 +28,43 @@ import org.reflections.Reflections;
 public class DevhubModule extends ServletModule {
 	
 	private final File rootFolder;
-	private final File mirrors;
 	private final Config config;
 
 	public DevhubModule(Config config, File rootFolder) {
 		this.config = config;
 		this.rootFolder = rootFolder;
-		this.mirrors = new File("mirrors");
 	}
 
 	@Override
 	protected void configureServlets() {
 		install(new DbModule());
 		install(new JaxrsModule());
-		
 		requireBinding(ObjectMapper.class);
 		
 		bind(Config.class).toInstance(config);
+		
 		bind(File.class).annotatedWith(Names.named("directory.templates")).toInstance(new File(rootFolder, "templates"));
-		bind(File.class).annotatedWith(Names.named("directory.mirrors")).toInstance(mirrors);
-		bind(File.class).annotatedWith(Names.named("jgit.sshd.certDir")).toInstance(new File("certs"));
-		bind(Integer.class).annotatedWith(Names.named("jgit.sshd.port")).toInstance(2223);
-		bind(String.class).annotatedWith(Names.named("jgit.sshd.host")).toInstance("localhost");
+		bind(File.class).annotatedWith(Names.named("directory.mirrors")).toInstance(config.getMirrorsDir());
+		bind(File.class).annotatedWith(Names.named("jgit.sshd.certDir")).toInstance(config.getSSHCertDir());
+		
+		bind(Integer.class).annotatedWith(Names.named("jgit.sshd.port")).toInstance(config.getSSHPort());
+		bind(String.class).annotatedWith(Names.named("jgit.sshd.host")).toInstance(config.getSSHHost());
+		bind(String.class).annotatedWith(Names.named("clone.url.template")).toInstance(config.getCloneUrl());
 		
 		bind(TranslatorFactory.class).toInstance(new TranslatorFactory("i18n.devhub"));
 		bind(GitBackend.class).to(GitBackendImpl.class);
 		bind(AuthenticationBackend.class).to(AuthenticationBackendImpl.class);
-		bind(AuthenticationProvider.class).toInstance(new AuthenticationProvider() {
-
-			@Override
-			public AuthenticationSession authenticate(String username,
-					String password) throws AuthenticationProviderUnavailable,
-					InvalidCredentialsException {
-				if((!username.equals("jgmeligmeyling")) || (!password.equals("a9QrW32a!")))
-					throw new InvalidCredentialsException();
-				return new AuthenticationSession() {
-					
-					@Override
-					public boolean synchronize(User user) throws IOException {
-						return false;
-					}
-					
-					@Override
-					public void fetch(User user) throws IOException {
-						user.setEmail("jan-willem@youngmediaexperts.nl");
-						user.setAdmin(true);
-						user.setName("Jan-Willem Gmelig Meyling");
-					}
-					
-					@Override
-					public void close() throws IOException {
-						
-					}
-				};
-			}
-			
-		});
-		bind(LdapUserProcessor.class).to(PersistingLdapUserProcessor.class);
+		bind(AuthenticationProvider.class).to(LdapAuthenticationProvider.class);
+		
+//		TODO Unused binding
+//		bind(LdapUserProcessor.class).to(PersistingLdapUserProcessor.class);
 		
 		install(new GitServletModule());
 	      
 		findResourcesWith(Path.class);
 		findResourcesWith(Provider.class);
 	}
-
+	
 	private void findResourcesWith(Class<? extends Annotation> ann) {
 		Reflections reflections = new Reflections(getClass().getPackage().getName());
 		for (Class<?> clasz : reflections.getTypesAnnotatedWith(ann)) {

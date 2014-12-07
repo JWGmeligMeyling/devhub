@@ -33,8 +33,7 @@ public class Courses extends Controller<Course> {
 	public Course find(String courseCode) {
 		Preconditions.checkNotNull(courseCode);
 		return ensureNotNull(query().from(QCourse.course)
-			.where(QCourse.course.code.eq(courseCode))
-			.where(QCourse.course.end.isNull())
+			.where(QCourse.course.code.equalsIgnoreCase(courseCode))
 			.singleResult(QCourse.course), "Could not find course with code: " + courseCode);
 	}
 

@@ -13,6 +13,18 @@
 			"password": "student2"
 		},
 		{
+			"name": "Student Three",
+			"email": "student-2@student.tudelft.nl",
+			"netId": "student3",
+			"password": "student3"
+		},
+		{
+			"name": "Student Four",
+			"email": "student-2@student.tudelft.nl",
+			"netId": "student4",
+			"password": "student4"
+		},
+		{
 			"name": "Assistant One",
 			"email": "assistant-1@student.tudelft.nl",
 			"netId": "assistant1",
@@ -28,7 +40,7 @@
 	],
 	"courses": [
 		{
-			"code": "ti1705",
+			"code": "TI1705",
 			"name": "Software quality and testing",
 			"templateRepositoryUrl": "https://github.com/SERG-Delft/jpacman-template.git",
 			"started": true,
@@ -47,6 +59,13 @@
 					"members": [
 						"student1",
 						"student2"
+					]
+				},
+				{
+					"groupNumber": 2,
+					"members": [
+						"student3",
+						"student4"
 					]
 				}
 			]

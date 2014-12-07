@@ -97,6 +97,7 @@ public class GitSSHModule extends AbstractModule {
 					try {
 						if(otherKey.getPublicKey().equals(key)) {
 							session.setAttribute(USER_KEY, user);
+							log.debug("{} authenticated using SSH key", username);
 							return true;
 						}
 					}
@@ -105,6 +106,7 @@ public class GitSSHModule extends AbstractModule {
 					}
 				}
 				
+				log.debug("Failed to authenticate {} using public key", username);
 				return false;
 			}
 		};

@@ -6,6 +6,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import javax.persistence.EntityNotFoundException;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Maps;
 import com.google.inject.Inject;
@@ -110,18 +112,27 @@ public class Bootstrapper {
 		}
 		
 		for (BCourse course : state.getCourses()) {
-			Course entity = new Course();
-			entity.setCode(course.getCode().toLowerCase());
-			entity.setName(course.getName());
-			entity.setTemplateRepositoryUrl(course.getTemplateRepositoryUrl());
-			entity.setStart(course.isStarted() ? new Date() : null);
-			entity.setEnd(course.isEnded() ? new Date() : null);
-			entity.setMinGroupSize(course.getMinGroupSize());
-			entity.setMaxGroupSize(course.getMaxGroupSize());
-			entity.setBuildTimeout(course.getBuildTimeout());
-			courses.persist(entity);
 			
-			log.debug("Persisted course: " + entity.getCode());
+			Course entity;
+			
+			try {
+				// TODO This is because the SKT course is created in the changelog 
+				entity = courses.find(course.getCode());
+			}
+			catch (EntityNotFoundException e) {
+				entity = new Course();
+				entity.setCode(course.getCode());
+				entity.setName(course.getName());
+				entity.setTemplateRepositoryUrl(course.getTemplateRepositoryUrl());
+				entity.setStart(course.isStarted() ? new Date() : null);
+				entity.setEnd(course.isEnded() ? new Date() : null);
+				entity.setMinGroupSize(course.getMinGroupSize());
+				entity.setMaxGroupSize(course.getMaxGroupSize());
+				entity.setBuildTimeout(course.getBuildTimeout());
+				courses.persist(entity);
+				
+				log.debug("Persisted course: " + entity.getCode());
+			}
 			
 			for (String assistantNetId : course.getAssistants()) {
 				User assistantUser = userMapping.get(assistantNetId);
@@ -163,6 +174,7 @@ public class Bootstrapper {
 				catch (RepositoryExists e) {
 					// Caching the test repository is actually good to not
 					// request the template repositories too much
+					log.info("Git repository {} was already initializated ", repositoryName);
 				}
 				catch (Exception e) {
 					throw new RuntimeException(e);

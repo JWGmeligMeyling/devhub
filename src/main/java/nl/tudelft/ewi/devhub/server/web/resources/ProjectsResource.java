@@ -58,6 +58,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.inject.name.Named;
 import com.google.inject.persist.Transactional;
 import com.google.inject.servlet.RequestScoped;
 
@@ -80,10 +81,14 @@ public class ProjectsResource extends Resource {
 	private final RequestScope scope;
 	private final Users users;
 	private final BuildResults buildResults;
+	private final String cloneUrlTemplate;
 
 	@Inject
-	ProjectsResource(TemplateEngine templateEngine, Groups groups, ProjectsBackend projectsBackend, Courses projects,
-			GitBackend gitBackend, RequestScope scope, Users users, BuildResults buildResults) {
+	ProjectsResource(TemplateEngine templateEngine, Groups groups,
+			ProjectsBackend projectsBackend, Courses projects,
+			GitBackend gitBackend, RequestScope scope, Users users,
+			BuildResults buildResults,
+			@Named("clone.url.template") String cloneUrlTemplate) {
 
 		this.templateEngine = templateEngine;
 		this.projectsBackend = projectsBackend;
@@ -93,6 +98,7 @@ public class ProjectsResource extends Resource {
 		this.scope = scope;
 		this.users = users;
 		this.buildResults = buildResults;
+		this.cloneUrlTemplate = cloneUrlTemplate;
 	}
 
 	@GET
@@ -267,10 +273,6 @@ public class ProjectsResource extends Resource {
 		Course course = courses.find(courseCode);
 		Group group = groups.find(course, Long.parseLong(groupNumber));
 		
-		if (!user.isAdmin() && !user.isAssisting(course) && !user.isMemberOf(group)) {
-			throw new UnauthorizedException();
-		}
-		
 		try(RepositoryProxy repository = gitBackend.open(group.getRepositoryName()).as(user)) {
 			BranchProxy branch = null;
 			
@@ -307,10 +309,6 @@ public class ProjectsResource extends Resource {
 		Course course = courses.find(courseCode);
 		Group group = groups.find(course, Long.parseLong(groupNumber));
 		
-		if (!user.isAdmin() && !user.isAssisting(course) && !user.isMemberOf(group)) {
-			throw new UnauthorizedException();
-		}
-		
 		try(RepositoryProxy repository = gitBackend.open(group.getRepositoryName()).as(user)) {
 
 			BranchProxy branch = repository.getBranch(branchName);
@@ -335,6 +333,7 @@ public class ProjectsResource extends Resource {
 		parameters.put("group", group);
 		parameters.put("states", new CommitChecker(group, buildResults));
 		parameters.put("repository", repository);
+		parameters.put("cloneUrl", getCloneUrl(repository));
 		
 		if(branch != null) {
 			parameters.put("branch", branch);
@@ -344,6 +343,12 @@ public class ProjectsResource extends Resource {
 		
 		List<Locale> locales = Collections.list(request.getLocales());
 		return display(templateEngine.process("project-view.ftl", locales, parameters));
+	}
+	
+	private String getCloneUrl(RepositoryProxy repo) {
+		return cloneUrlTemplate
+			.replace("{username}", scope.getUser().getNetId())
+			.replace("{path}", repo.getPath());
 	}
 
 	@GET
@@ -362,10 +367,6 @@ public class ProjectsResource extends Resource {
 		User user = scope.getUser();
 		Course course = courses.find(courseCode);
 		Group group = groups.find(course, Long.parseLong(groupNumber));
-
-		if (!user.isAdmin() && !user.isAssisting(course) && !user.isMemberOf(group)) {
-			throw new UnauthorizedException();
-		}
 
 		try(RepositoryProxy repository = gitBackend.open(group.getRepositoryName()).as(user)) {
 			
@@ -409,10 +410,6 @@ public class ProjectsResource extends Resource {
 		User user = scope.getUser();
 		Course course = courses.find(courseCode);
 		Group group = groups.find(course, groupNumber);
-
-		if (!user.isAdmin() && !user.isAssisting(course) && !user.isMemberOf(group)) {
-			throw new UnauthorizedException();
-		}
 
 		try(RepositoryProxy repository = gitBackend.open(group.getRepositoryName()).as(user)) {
 			
@@ -464,10 +461,6 @@ public class ProjectsResource extends Resource {
 		Course course = courses.find(courseCode);
 		Group group = groups.find(course, groupNumber);
 
-		if (!user.isAdmin() && !user.isAssisting(course) && !user.isMemberOf(group)) {
-			throw new UnauthorizedException();
-		}
-		
 		try(RepositoryProxy repository = gitBackend.open(group.getRepositoryName()).as(user)) {
 
 			Map<String, EntryType> entries = new TreeMap<>(new Comparator<String>() {
@@ -523,10 +516,6 @@ public class ProjectsResource extends Resource {
 		Course course = courses.find(courseCode);
 		Group group = groups.find(course, groupNumber);
 
-		if (!user.isAdmin() && !user.isAssisting(course) && !user.isMemberOf(group)) {
-			throw new UnauthorizedException();
-		}
-		
 		String folderPath = "";
 		String fileName = path;
 		if (path.contains("/")) {
@@ -576,20 +565,6 @@ public class ProjectsResource extends Resource {
 		
 	}
 	
-//	private BranchProxy fetchBranch(
-//			final RepositoryProxy repository, final String branchName,
-//			final int page) throws ApiError {
-//		
-//		try {
-//			BranchProxy branchProxy = repository.getBranch(branchName);
-//			branch.setCommits(branchProxy.getCommits((page - 1) * PAGE_SIZE, PAGE_SIZE));
-//			return branch;
-//		}
-//		catch (Throwable e) {
-//			throw new ApiError("error.git-server-unavailable", e);
-//		}
-//	}
-
 	private List<User> getGroupMembers(HttpServletRequest request) {
 		String netId;
 		int memberId = 1;

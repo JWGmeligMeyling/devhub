@@ -8,7 +8,6 @@ import nl.tudelft.ewi.devhub.server.backend.AuthenticationBackend;
 import nl.tudelft.ewi.devhub.server.backend.Bootstrapper;
 import nl.tudelft.ewi.devhub.server.backend.MockedAuthenticationBackend;
 
-import com.google.common.io.Files;
 import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 
@@ -18,8 +17,7 @@ public class MockedDevhubServer {
 	protected static File mirrors;
 	
 	public static void main(String[] args) throws Exception {
-		mirrors = Files.createTempDir();
-		mirrors.deleteOnExit();
+		mirrors = new File("mirrors/test/");
 
 		server = new DevhubServer(new AbstractModule() {
 			@Override
