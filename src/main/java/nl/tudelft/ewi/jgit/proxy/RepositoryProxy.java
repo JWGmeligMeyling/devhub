@@ -4,7 +4,6 @@ import java.io.File;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import nl.tudelft.ewi.git.models.DetailedCommitModel;
 import nl.tudelft.ewi.git.models.TagModel;
 
 import org.eclipse.jgit.api.Git;
@@ -81,8 +80,7 @@ public class RepositoryProxy extends AbstractGitProxy {
 				.call()
 				.iterator().next();
 			
-			DetailedCommitModel model = MAP_REV_TO_DCOMMIT.apply(revCommit);
-			return new CommitProxyImpl(git, model);
+			return new CommitProxy(git, revCommit);
 		}
 		catch (MissingObjectException | IncorrectObjectTypeException
 				| GitAPIException e) {

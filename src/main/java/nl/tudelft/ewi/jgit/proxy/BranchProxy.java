@@ -2,8 +2,6 @@ package nl.tudelft.ewi.jgit.proxy;
 
 import java.util.List;
 
-import nl.tudelft.ewi.git.models.CommitModel;
-
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
@@ -11,6 +9,7 @@ import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 
@@ -22,22 +21,26 @@ public class BranchProxy extends AbstractGitProxy {
 
 	public BranchProxy(final Git git, final Ref ref) {
 		super(git);
+		Preconditions.checkNotNull(ref);
 		this.ref = ref;
 	}
 	
-	public List<CommitModel> getCommits(final int skip, final int limit) throws GitException {
+	public List<CommitProxy> getCommits(final int skip, final int limit) throws GitException {
+		Preconditions.checkArgument(skip >= 0);
+		Preconditions.checkArgument(limit >= 0);
+		
 		final ObjectId commit = ref.getObjectId();
 		
 		try {
-			ImmutableList.Builder<CommitModel> builder = new ImmutableList.Builder<CommitModel>();
+			ImmutableList.Builder<CommitProxy> builder = new ImmutableList.Builder<CommitProxy>();
 
 			git.log()
 				.add(commit)
 				.setSkip(skip)
 				.setMaxCount(limit)
 				.call()
-				.forEach(rev -> {
-					builder.add(MAP_REV_TO_COMMIT.apply(rev));
+				.forEach(revCommit -> {
+					builder.add(new CommitProxy(git, revCommit));
 				});
 
 			return builder.build();

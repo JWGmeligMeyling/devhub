@@ -41,7 +41,6 @@ import nl.tudelft.ewi.devhub.server.web.errors.UnauthorizedException;
 import nl.tudelft.ewi.devhub.server.web.filters.RequestScope;
 import nl.tudelft.ewi.devhub.server.web.filters.RequireAuthenticatedUser;
 import nl.tudelft.ewi.devhub.server.web.templating.TemplateEngine;
-import nl.tudelft.ewi.git.models.DetailedCommitModel;
 import nl.tudelft.ewi.git.models.EntryType;
 import nl.tudelft.ewi.jgit.proxy.BranchProxy;
 import nl.tudelft.ewi.jgit.proxy.CommitProxy;
@@ -370,7 +369,7 @@ public class ProjectsResource extends Resource {
 
 		try(RepositoryProxy repository = gitBackend.open(group.getRepositoryName()).as(user)) {
 			
-			DetailedCommitModel commit = repository.getCommit(commitId).getCommitModel();
+			CommitProxy commit = repository.getCommit(commitId);
 
 			Map<String, Object> parameters = Maps.newLinkedHashMap();
 			parameters.put("user", scope.getUser());
@@ -418,19 +417,18 @@ public class ProjectsResource extends Resource {
 		try(RepositoryProxy repository = gitBackend.open(group.getRepositoryName()).as(user)) {
 			
 			CommitProxy commitProxy = repository.getCommit(oldId);
-			DetailedCommitModel oldCommit = commitProxy.getCommitModel();
 			List<Diff> diffs = commitProxy.getDiff(newId);
 
 			Map<String, Object> parameters = Maps.newLinkedHashMap();
 			parameters.put("user", scope.getUser());
 			parameters.put("group", group);
 			parameters.put("diffs", diffs);
-			parameters.put("commit", oldCommit);
+			parameters.put("commit", commitProxy);
 			parameters.put("repository", repository);
 			parameters.put("states", new CommitChecker(group, buildResults));
 			
 			if(newId != null) {
-				DetailedCommitModel newCommit = repository.getCommit(newId).getCommitModel();
+				CommitProxy newCommit = repository.getCommit(newId);
 				parameters.put("newCommit", newCommit);
 			}
 			
@@ -495,7 +493,7 @@ public class ProjectsResource extends Resource {
 			
 			Map<String, Object> parameters = Maps.newLinkedHashMap();
 			parameters.put("user", scope.getUser());
-			parameters.put("commit", commit.getCommitModel());
+			parameters.put("commit", commit);
 			parameters.put("path", path);
 			parameters.put("group", group);
 			parameters.put("repository", repository);
@@ -557,7 +555,7 @@ public class ProjectsResource extends Resource {
 			
 			Map<String, Object> parameters = Maps.newLinkedHashMap();
 			parameters.put("user", scope.getUser());
-			parameters.put("commit", commitProxy.getCommitModel());
+			parameters.put("commit", commitProxy);
 			parameters.put("path", path);
 			parameters.put("contents", contents);
 			parameters.put("highlight", Highlight.forFileName(path));

@@ -16,7 +16,9 @@ public interface GitBackend {
 	 * @param path
 	 *            Path to the repository to create
 	 * @param templateRepository
-	 *            Template repository to clone after initialization
+	 *            Template repository to clone after initialization. When the
+	 *            template repository url is empty, an empty repository will be
+	 *            initialized.
 	 * @throws RepositoryExists
 	 *             when a repository already exists at the given path
 	 * @throws GitException
