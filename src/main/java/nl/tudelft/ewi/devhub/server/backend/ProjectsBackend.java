@@ -14,16 +14,12 @@ import nl.tudelft.ewi.devhub.server.database.entities.Group;
 import nl.tudelft.ewi.devhub.server.database.entities.GroupMembership;
 import nl.tudelft.ewi.devhub.server.database.entities.User;
 import nl.tudelft.ewi.devhub.server.web.errors.ApiError;
-import nl.tudelft.ewi.git.models.CreateRepositoryModel;
-import nl.tudelft.ewi.git.models.RepositoryModel.Level;
 import nl.tudelft.ewi.jgit.proxy.GitBackend;
 import nl.tudelft.ewi.jgit.proxy.GitBackend.RepositoryExists;
 import nl.tudelft.ewi.jgit.proxy.GitException;
 
 import org.hibernate.exception.ConstraintViolationException;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
@@ -169,24 +165,7 @@ public class ProjectsBackend {
 
 	private void provisionRepository(String courseCode, String repoName, String templateUrl, Collection<User> members) throws RepositoryExists, GitException {
 		log.info("Provisioning new Git repository: {}", repoName);
-//		nl.tudelft.ewi.git.client.Users gitUsers = client.users();
-
-		Builder<String, Level> permissions = ImmutableMap.<String, Level> builder();
-		for (User member : members) {
-//			gitUsers.ensureExists(member.getNetId());
-			permissions.put(member.getNetId(), Level.READ_WRITE);
-		}
-
-		permissions.put("@" + courseCode.toLowerCase(), Level.ADMIN);
-
-		CreateRepositoryModel repoModel = new CreateRepositoryModel();
-		repoModel.setName(repoName);
-		repoModel.setTemplateRepository(templateUrl);
-		repoModel.setPermissions(permissions.build());
-
-//		Repositories repositories = client.repositories();
-//		repositories.create(repoModel);
-		gitBackend.create(repoModel);
+		gitBackend.create(repoName, templateUrl);
 		log.info("Finished provisioning Git repository: {}", repoName);
 	}
 

@@ -156,7 +156,7 @@ public class GitSSHModule extends AbstractModule {
 				
 				User user = req.getSessionAttribute(USER_KEY);
 				return gitBackendProvider.get()
-					.open(user, repoName)
+					.open(repoName).as(user)
 					.getRepository();
 			}
 			

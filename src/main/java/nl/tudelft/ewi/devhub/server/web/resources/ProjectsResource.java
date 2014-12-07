@@ -43,14 +43,13 @@ import nl.tudelft.ewi.devhub.server.web.filters.RequireAuthenticatedUser;
 import nl.tudelft.ewi.devhub.server.web.templating.TemplateEngine;
 import nl.tudelft.ewi.git.models.DetailedBranchModel;
 import nl.tudelft.ewi.git.models.DetailedCommitModel;
-import nl.tudelft.ewi.git.models.DetailedRepositoryModel;
 import nl.tudelft.ewi.git.models.EntryType;
 import nl.tudelft.ewi.jgit.proxy.BranchProxy;
 import nl.tudelft.ewi.jgit.proxy.CommitProxy;
 import nl.tudelft.ewi.jgit.proxy.Diff;
 import nl.tudelft.ewi.jgit.proxy.GitBackend;
 import nl.tudelft.ewi.jgit.proxy.GitException;
-import nl.tudelft.ewi.jgit.proxy.RepositoyProxy;
+import nl.tudelft.ewi.jgit.proxy.RepositoryProxy;
 
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jgit.lib.ObjectLoader;
@@ -273,7 +272,7 @@ public class ProjectsResource extends Resource {
 			throw new UnauthorizedException();
 		}
 		
-		try(RepositoyProxy repositoryProxy = gitBackend.open(user, group.getRepositoryName())) {
+		try(RepositoryProxy repositoryProxy = gitBackend.open(group.getRepositoryName()).as(user)) {
 			DetailedBranchModel branch;
 			
 			try {
@@ -289,7 +288,7 @@ public class ProjectsResource extends Resource {
 				}
 			}
 			
-			return showBranchOverview(request, group, repositoryProxy.getRepositoryModel(), branch, 1);
+			return showBranchOverview(request, group, repositoryProxy, branch, 1);
 		}
 		catch(GitException e) {
 			throw new ApiError("error.git-server-unavailable", e);
@@ -317,15 +316,11 @@ public class ProjectsResource extends Resource {
 			throw new UnauthorizedException();
 		}
 		
-		try(RepositoyProxy repositoryProxy = gitBackend.open(user, group.getRepositoryName())) {
+		try(RepositoryProxy repositoryProxy = gitBackend.open(group.getRepositoryName()).as(user)) {
 			
-			DetailedRepositoryModel repository = repositoryProxy.getRepositoryModel();
 			DetailedBranchModel branch = fetchBranch(repositoryProxy, branchName, page);
-			return showBranchOverview(request, group, repository, branch, page);
+			return showBranchOverview(request, group, repositoryProxy, branch, page);
 			
-		}
-		catch(GitException e) {
-			throw new ApiError("error.git-server-unavailable", e);
 		}
 		catch (ServiceNotAuthorizedException e) {
 			throw new UnauthorizedException();
@@ -333,7 +328,7 @@ public class ProjectsResource extends Resource {
 	}
 	
 	private Response showBranchOverview(HttpServletRequest request,
-			Group group, DetailedRepositoryModel repository,
+			Group group, RepositoryProxy repository,
 			DetailedBranchModel branch, int page) throws IOException {
 		
 		Map<String, Object> parameters = Maps.newLinkedHashMap();
@@ -372,9 +367,8 @@ public class ProjectsResource extends Resource {
 			throw new UnauthorizedException();
 		}
 
-		try(RepositoyProxy repositoryProxy = gitBackend.open(user, group.getRepositoryName())) {
+		try(RepositoryProxy repositoryProxy = gitBackend.open(group.getRepositoryName()).as(user)) {
 			
-			DetailedRepositoryModel repository = repositoryProxy.getRepositoryModel();
 			DetailedCommitModel commit = repositoryProxy.getCommit(commitId).getCommitModel();
 
 			Map<String, Object> parameters = Maps.newLinkedHashMap();
@@ -382,7 +376,7 @@ public class ProjectsResource extends Resource {
 			parameters.put("group", group);
 			parameters.put("commit", commit);
 			parameters.put("states", new CommitChecker(group, buildResults));
-			parameters.put("repository", repository);
+			parameters.put("repository", repositoryProxy);
 			
 			List<Locale> locales = Collections.list(request.getLocales());
 			return display(templateEngine.process("project-commit-view.ftl", locales, parameters));
@@ -420,9 +414,8 @@ public class ProjectsResource extends Resource {
 			throw new UnauthorizedException();
 		}
 
-		try(RepositoyProxy repositoryProxy = gitBackend.open(user, group.getRepositoryName())) {
+		try(RepositoryProxy repositoryProxy = gitBackend.open(group.getRepositoryName()).as(user)) {
 			
-			DetailedRepositoryModel repository = repositoryProxy.getRepositoryModel();
 			CommitProxy commitProxy = repositoryProxy.getCommit(oldId);
 			DetailedCommitModel oldCommit = commitProxy.getCommitModel();
 			List<Diff> diffs = commitProxy.getDiff(newId);
@@ -432,7 +425,7 @@ public class ProjectsResource extends Resource {
 			parameters.put("group", group);
 			parameters.put("diffs", diffs);
 			parameters.put("commit", oldCommit);
-			parameters.put("repository", repository);
+			parameters.put("repository", repositoryProxy);
 			parameters.put("states", new CommitChecker(group, buildResults));
 			
 			if(newId != null) {
@@ -476,9 +469,8 @@ public class ProjectsResource extends Resource {
 			throw new UnauthorizedException();
 		}
 		
-		try(RepositoyProxy repositoryProxy = gitBackend.open(user, group.getRepositoryName())) {
+		try(RepositoryProxy repositoryProxy = gitBackend.open(group.getRepositoryName()).as(user)) {
 
-			DetailedRepositoryModel repository = repositoryProxy.getRepositoryModel();
 			Map<String, EntryType> entries = new TreeMap<>(new Comparator<String>() {
 
 				@Override
@@ -505,7 +497,7 @@ public class ProjectsResource extends Resource {
 			parameters.put("commit", commit.getCommitModel());
 			parameters.put("path", path);
 			parameters.put("group", group);
-			parameters.put("repository", repository);
+			parameters.put("repository", repositoryProxy);
 			parameters.put("entries", entries);
 			parameters.put("states", new CommitChecker(group, buildResults));
 			
@@ -543,9 +535,8 @@ public class ProjectsResource extends Resource {
 			fileName = path.substring(path.lastIndexOf('/') + 1);
 		}
 		
-		try(RepositoyProxy repositoryProxy = gitBackend.open(user, group.getRepositoryName())) {
+		try(RepositoryProxy repositoryProxy = gitBackend.open(group.getRepositoryName()).as(user)) {
 
-			DetailedRepositoryModel repository = repositoryProxy.getRepositoryModel();
 			CommitProxy commitProxy = repositoryProxy.getCommit(commitId);
 			Map<String, EntryType> entries = commitProxy.showTree(folderPath);
 			
@@ -570,7 +561,7 @@ public class ProjectsResource extends Resource {
 			parameters.put("contents", contents);
 			parameters.put("highlight", Highlight.forFileName(path));
 			parameters.put("group", group);
-			parameters.put("repository", repository);
+			parameters.put("repository", repositoryProxy);
 			parameters.put("states", new CommitChecker(group, buildResults));
 			
 			List<Locale> locales = Collections.list(request.getLocales());
@@ -587,7 +578,7 @@ public class ProjectsResource extends Resource {
 	}
 	
 	private DetailedBranchModel fetchBranch(
-			final RepositoyProxy repositoryProxy, final String branchName,
+			final RepositoryProxy repositoryProxy, final String branchName,
 			final int page) throws ApiError {
 		
 		try {

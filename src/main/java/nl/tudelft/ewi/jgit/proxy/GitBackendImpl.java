@@ -10,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import nl.tudelft.ewi.devhub.server.database.controllers.Groups;
 import nl.tudelft.ewi.devhub.server.database.entities.Group;
 import nl.tudelft.ewi.devhub.server.database.entities.User;
-import nl.tudelft.ewi.git.models.CreateRepositoryModel;
 
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
@@ -26,49 +25,20 @@ import com.google.inject.name.Named;
 public class GitBackendImpl implements GitBackend {
 	
 	private final File root;
+	private final Path rootPath;
 	private final Groups groups;
 	
 	@Inject
-	public GitBackendImpl(@Named("directory.mirrors") final File root, final Groups groups) {
+	public GitBackendImpl(@Named("directory.mirrors") final File root,
+			final Groups groups) {
 		this.root = root;
+		this.rootPath = root.toPath();
 		this.groups = groups;
 	}
-
+	
 	@Override
-	public RepositoyProxy open(User user, String repoName) throws ServiceNotAuthorizedException, RepositoryNotFoundException {
-
-		final Path rootPath = root.toPath();
-		final Path newPath = rootPath.resolve(repoName);
-		
-		Group group;
-		
-		try {
-			group = groups.findByRepoName(repoName);
-		} catch (EntityNotFoundException e) {
-			log.debug("Group could not be found for repository {}", repoName);
-			throw new RepositoryNotFoundException(repoName, e);
-		}
-		
-		if(!group.getMembers().contains(user)) {
-			log.debug("User {} is not a member of group {}", user, group);
-			throw new ServiceNotAuthorizedException();
-		}
-		
-		File folder = newPath.toFile();
-		
-		try {
-			Git git = Git.open(folder);
-			return new RepositoryProxyImpl(git, repoName);
-		}
-		catch (IOException e) {
-			throw new RepositoryNotFoundException(folder, e);
-		}
-	}
-
-	@Override
-	public void create(final CreateRepositoryModel model) throws RepositoryExists, GitException {
-		Preconditions.checkNotNull(model);
-		String path = model.getName();
+	public void create(final String path, final String templateRepository) throws RepositoryExists, GitException {
+		Preconditions.checkNotNull(path);
 		Preconditions.checkArgument(!path.isEmpty());
 		
 		final Path rootPath = root.toPath();
@@ -85,8 +55,6 @@ public class GitBackendImpl implements GitBackend {
 		}
 		
 		try {
-			String templateRepository = model.getTemplateRepository();
-			
 			if(templateRepository != null) {
 				Git.cloneRepository().setDirectory(folder).setURI(templateRepository).call();
 			}
@@ -103,6 +71,58 @@ public class GitBackendImpl implements GitBackend {
 			
 			throw new GitException(e);
 		}
+	}
+
+	@Override
+	public RepositoryProxyPromise open(final String repoName) {
+		return new RepositoryProxyPromiseImpl(repoName);
+	}
+
+	class RepositoryProxyPromiseImpl implements RepositoryProxyPromise {
+		
+		private final String repoName;
+		private final Path path;
+		
+		public RepositoryProxyPromiseImpl(final String repoName) {
+			this.repoName = repoName;
+			this.path = rootPath.resolve(repoName);
+		}
+
+		@Override
+		public RepositoryProxy as(User user)
+				throws RepositoryNotFoundException,
+				ServiceNotAuthorizedException {
+			
+			Group group;
+			
+			try {
+				group = groups.findByRepoName(repoName);
+			} catch (EntityNotFoundException e) {
+				log.debug("Group could not be found for repository {}", repoName);
+				throw new RepositoryNotFoundException(repoName, e);
+			}
+			
+			if(!group.getMembers().contains(user)) {
+				log.debug("User {} is not a member of group {}", user, group);
+				throw new ServiceNotAuthorizedException();
+			}
+			
+			return unsafe();
+		}
+
+		@Override
+		public RepositoryProxy unsafe() throws RepositoryNotFoundException {
+			File folder = path.toFile();
+			
+			try {
+				Git git = Git.open(folder);
+				return new RepositoryProxy(git, repoName);
+			}
+			catch (IOException e) {
+				throw new RepositoryNotFoundException(folder, e);
+			}
+		}
+		
 	}
 	
 }

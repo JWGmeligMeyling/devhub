@@ -6,7 +6,6 @@ import java.util.stream.Collectors;
 
 import nl.tudelft.ewi.git.models.BranchModel;
 import nl.tudelft.ewi.git.models.DetailedCommitModel;
-import nl.tudelft.ewi.git.models.DetailedRepositoryModel;
 import nl.tudelft.ewi.git.models.TagModel;
 
 import org.eclipse.jgit.api.Git;
@@ -16,19 +15,27 @@ import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.revwalk.DepthWalk.Commit;
 import org.eclipse.jgit.revwalk.RevCommit;
 
-public class RepositoryProxyImpl extends AbstractGitProxy implements RepositoyProxy {
+public class RepositoryProxy extends AbstractGitProxy {
 	
 	private final String path;
 	
-	public RepositoryProxyImpl(final Git git, String path) {
+	public RepositoryProxy(final Git git, String path) {
 		super(git);
 		this.path = path;
 	}
 	
-	/* (non-Javadoc)
-	 * @see nl.tudelft.ewi.jgit.proxy.RepositoyProxy#getBranches()
-	 */
-	@Override
+	public String getName() {
+		return path;
+	}
+	
+	public String getPath() {
+		return path;
+	}
+	
+	public String getUrl() {
+		return "https://localhost/remote/".concat(path);
+	}
+	
 	public List<BranchModel> getBranches() throws GitException {
 		try {
 			return git.branchList()
@@ -42,10 +49,6 @@ public class RepositoryProxyImpl extends AbstractGitProxy implements RepositoyPr
 		}
 	}
 	
-	/* (non-Javadoc)
-	 * @see nl.tudelft.ewi.jgit.proxy.RepositoyProxy#getBranch(java.lang.String)
-	 */
-	@Override
 	public BranchProxy getBranch(final String branchName) throws GitException {
 		try {
 			BranchModel branchModel =  git.branchList()
@@ -60,10 +63,6 @@ public class RepositoryProxyImpl extends AbstractGitProxy implements RepositoyPr
 		}
 	}
 
-	/* (non-Javadoc)
-	 * @see nl.tudelft.ewi.jgit.proxy.RepositoyProxy#getTags()
-	 */
-	@Override
 	public List<TagModel> getTags() throws GitException {
 		try {
 			return git.tagList()
@@ -76,10 +75,6 @@ public class RepositoryProxyImpl extends AbstractGitProxy implements RepositoyPr
 		}
 	}
 	
-	/* (non-Javadoc)
-	 * @see nl.tudelft.ewi.jgit.proxy.RepositoyProxy#getCommit(java.lang.String)
-	 */
-	@Override
 	public CommitProxy getCommit(final String commitId) throws GitException {
 		try {
 			final RevCommit revCommit = git.log()
@@ -97,21 +92,10 @@ public class RepositoryProxyImpl extends AbstractGitProxy implements RepositoyPr
 		}
 	}
 
-	@Override
 	public void delete() {
 		final File dir = repo.getDirectory();
 		git.close();
 		dir.delete();
-	}
-
-	@Override
-	public DetailedRepositoryModel getRepositoryModel() throws GitException {
-		DetailedRepositoryModel model = new DetailedRepositoryModel();
-		model.setBranches(getBranches());
-		model.setTags(getTags());
-		model.setName(path);
-		model.setUrl(path);
-		return model;
 	}
 
 }

@@ -59,7 +59,7 @@ public class GitServletModule extends ServletModule {
 				}
 				
 				return gitBackendProvider.get()
-					.open(user, repoName)
+					.open(repoName).as(user)
 					.getRepository();
 			}
 		};
