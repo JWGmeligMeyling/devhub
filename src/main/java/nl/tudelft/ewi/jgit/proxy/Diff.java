@@ -3,18 +3,23 @@ package nl.tudelft.ewi.jgit.proxy;
 import java.util.List;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import nl.tudelft.ewi.devhub.server.util.DiffLine;
 import nl.tudelft.ewi.git.models.DiffModel;
 
 @Data
-public class Diff {
+@NoArgsConstructor
+@EqualsAndHashCode( callSuper=true)
+public class Diff extends DiffModel {
 	
-	private final List<DiffLine> lines;
-	private final DiffModel diffModel;
+	private List<DiffLine> lines;
 	
-	public Diff(DiffModel diffModel) {
-		this.diffModel = diffModel;
-		this.lines = DiffLine.getLinesFor(diffModel);
+	public Diff(final DiffModel diffModel) {
+		setNewPath(diffModel.getNewPath());
+		setOldPath(diffModel.getOldPath());
+		setType(diffModel.getType());
+		setLines(DiffLine.getLinesFor(diffModel));
 	}
 	
 	public static Diff of(DiffModel diffModel) {
@@ -22,23 +27,23 @@ public class Diff {
 	}
 	
 	public boolean isDeleted() {
-		return diffModel.getType().equals(DiffModel.Type.DELETE);
+		return getType().equals(DiffModel.Type.DELETE);
 	}
 	
 	public boolean isAdded() {
-		return diffModel.getType().equals(DiffModel.Type.ADD);
+		return getType().equals(DiffModel.Type.ADD);
 	}
 	
 	public boolean isModified() {
-		return diffModel.getType().equals(DiffModel.Type.MODIFY);
+		return getType().equals(DiffModel.Type.MODIFY);
 	}
 	
 	public boolean isCopied() {
-		return diffModel.getType().equals(DiffModel.Type.COPY);
+		return getType().equals(DiffModel.Type.COPY);
 	}
 	
 	public boolean isMoved() {
-		return diffModel.getType().equals(DiffModel.Type.RENAME);
+		return getType().equals(DiffModel.Type.RENAME);
 	}
 	
 }

@@ -8,7 +8,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import nl.tudelft.ewi.devhub.server.util.DiffLine;
-import nl.tudelft.ewi.git.models.DiffModel;
+import nl.tudelft.ewi.jgit.proxy.Diff;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
@@ -90,12 +90,10 @@ public class DiffView extends View {
 	@Data
 	@ToString(callSuper=true)
 	@EqualsAndHashCode(callSuper=true)
-	public static class DiffElement extends DiffModel {
+	public static class DiffElement extends Diff {
 		
 		private final WebElement element;
 		
-		private List<DiffLine> diffLines;
-				
 		/**
 		 * Build a {@link DiffElement} from a {@link WebElement} in the {@link DiffView}
 		 * @param element the {@link WebElement} to be converted into a {@link DiffElement}
@@ -127,7 +125,7 @@ public class DiffView extends View {
 					break;
 			}
 			
-			result.setDiffLines(getDiffLinesFor(element.findElements(By.tagName("tr"))));
+			result.setLines(getDiffLinesFor(element.findElements(By.tagName("tr"))));
 			return result;
 		}
 		

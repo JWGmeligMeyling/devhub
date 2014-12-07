@@ -3,6 +3,9 @@ package nl.tudelft.ewi.devhub.webtests.views;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.IOException;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.util.List;
 
 import org.openqa.selenium.By;
@@ -66,20 +69,29 @@ public class TextFileView extends View {
 	 * @return the contents of this text file
 	 */
 	public String getContent() {
-		StringBuilder sb = new StringBuilder();
+		StringWriter writer = new StringWriter();
+		
+		try {
+			getContent(writer);
+		}
+		catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		
+		return writer.toString();
+	}
+	
+	public void getContent(Writer writer) throws IOException {
 		WebElement tableDiffs = getDriver().findElement(TABLE_DIFFS);
 		List<WebElement> lines = tableDiffs.findElements(By.tagName("pre"));
-		sb.ensureCapacity(lines.size() * 10);
 		
 		boolean newLine = false;
 		
 		for (WebElement line : lines) {
 			if(newLine)
-				sb.append('\n');
-			sb.append(line.getText());
+				writer.append('\n');
+			writer.append(line.getText());
 			newLine = true;
 		}
-		
-		return sb.toString();
 	}
 }

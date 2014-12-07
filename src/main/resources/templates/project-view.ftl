@@ -81,7 +81,10 @@
 							<span class="state glyphicon glyphicon-unchecked"></span>
 			[/#if]
 							<a href="/projects/${group.course.code}/groups/${group.groupNumber}/commits/${commit.getCommit()}/diff">
-								<div class="comment">${commit.getMessage()} [@listTags repository commit.getCommit() /]</div>
+								<div class="comment">
+									<span class="commit-message">${commit.getMessage()}</span>
+									<span class="tags">[@listTags repository commit.getCommit() /]</span>
+								</div>
 								<div class="committer">${commit.getAuthor()}</div>
 								<div class="timestamp" data-value="${(commit.getTime() * 1000)}">on ${(commit.getTime() * 1000)?number_to_datetime?string["EEEE dd MMMM yyyy HH:mm"]}</div>
 							</a>

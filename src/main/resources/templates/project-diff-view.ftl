@@ -10,15 +10,15 @@
 					<button class="pull-right btn btn-sm btn-default folder"><i class="glyphicon glyphicon-chevron-up"></i> Fold</button>
 					<button class="pull-right btn btn-sm btn-default unfolder" style="display: none;"><i class="glyphicon glyphicon-chevron-down"></i> Unfold</button>
 			[#if diff.isMoved()]
-					<h5><span class="label label-warn">Moved</span> ${diff.diffModel.oldPath} -&gt; ${diff.diffModel.newPath}</h5>
+					<h5><span class="label label-warn">Moved</span> ${diff.oldPath} -&gt; ${diff.newPath}</h5>
 			[#elseif diff.isCopied()]
-					<h5><span class="label label-warn">Copied</span> ${diff.diffModel.oldPath} -&gt; ${diff.diffModel.newPath}</h5>
+					<h5><span class="label label-warn">Copied</span> ${diff.oldPath} -&gt; ${diff.newPath}</h5>
 			[#elseif diff.isDeleted()]
-					<h5><span class="label label-danger">Deleted</span> ${diff.diffModel.oldPath}</h5>
+					<h5><span class="label label-danger">Deleted</span> ${diff.oldPath}</h5>
 			[#elseif diff.isAdded()]
-					<h5><span class="label label-success">Created</span> </i> ${diff.diffModel.newPath}</h5>
+					<h5><span class="label label-success">Created</span> </i> ${diff.newPath}</h5>
 			[#elseif diff.isModified()]
-					<h5><span class="label label-primary">Modified</span> ${diff.diffModel.newPath}</h5>
+					<h5><span class="label label-primary">Modified</span> ${diff.newPath}</h5>
 			[/#if]
 				</div>
 			[#if  diff.lines?has_content]

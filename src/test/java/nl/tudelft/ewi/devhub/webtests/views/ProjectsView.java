@@ -21,7 +21,7 @@ public class ProjectsView extends AuthenticatedView {
 	private static final By CREATE_GROUP_BUTTON = By.xpath("//a[contains(normalize-space(.), 'Create new group')]");
 	private static final By ASSISTING_PROJECTS_HEADER = By.xpath("//h2[starts-with(normalize-space(.), 'Assisting projects')]");
 
-	ProjectsView(WebDriver driver) {
+	public ProjectsView(WebDriver driver) {
 		super(driver);
 		assertInvariant();
 	}

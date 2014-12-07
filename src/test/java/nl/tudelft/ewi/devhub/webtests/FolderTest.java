@@ -3,68 +3,27 @@ package nl.tudelft.ewi.devhub.webtests;
 import static org.junit.Assert.*;
 import static org.hamcrest.Matchers.containsString;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Map;
 
-import org.junit.BeforeClass;
+import org.apache.commons.io.IOUtils;
+import org.eclipse.jgit.errors.RepositoryNotFoundException;
 import org.junit.Test;
-
-import com.google.common.collect.ImmutableMap;
 
 import nl.tudelft.ewi.devhub.webtests.utils.WebTest;
 import nl.tudelft.ewi.devhub.webtests.views.FolderView;
 import nl.tudelft.ewi.devhub.webtests.views.TextFileView;
-import nl.tudelft.ewi.git.client.GitServerClientMock;
-import nl.tudelft.ewi.git.client.RepositoriesMock;
-import nl.tudelft.ewi.git.models.BranchModel;
-import nl.tudelft.ewi.git.models.CommitModel;
-import nl.tudelft.ewi.git.models.DetailedCommitModel;
 import nl.tudelft.ewi.git.models.EntryType;
-import nl.tudelft.ewi.git.models.MockedRepositoryModel;
-import nl.tudelft.ewi.git.models.UserModel;
+import nl.tudelft.ewi.jgit.proxy.CommitProxy;
+import nl.tudelft.ewi.jgit.proxy.GitException;
 
 public class FolderTest extends WebTest {
 	
-	public static final String COMMIT_ID = "6f69819c39b87566a65a2a005a6553831f6d7e7c";
-	public static final String COMMIT_MESSAGE = "Initial commit";
-	public static final String REPO_NAME = "group-1/";
-	public static final String FOLDER_NAME = "SubFolder/";
-	public static final String TEXT_FILE_NAME = "File.txt";
+	private static final String REPOSITORY_PATH = "courses/ti1705/group-1";
+	private static final String REPO_NAME = "group-1/";
 	
-	private static GitServerClientMock gitServerClient;
-	private static MockedRepositoryModel repository;
-	private static UserModel user;
-	private static CommitModel commit;
-	
-	
-	@BeforeClass
-	public static void setUpRepository() throws Exception {
-		gitServerClient = getGitServerClient();
-		user = gitServerClient.users().ensureExists(NET_ID);
-		repository = gitServerClient.repositories().retrieve("courses/ti1705/group-1");
-		commit = createInitialCommit(repository);
-		gitServerClient.repositories().setDirectoryEntries(
-				ImmutableMap.<String, EntryType> of(FOLDER_NAME,
-						EntryType.FOLDER, TEXT_FILE_NAME, EntryType.TEXT));
-	}
-	
-	private static DetailedCommitModel createInitialCommit(MockedRepositoryModel repository) {
-		DetailedCommitModel commit = new DetailedCommitModel();
-		commit.setAuthor(user.getName());
-		commit.setCommit(COMMIT_ID);
-		commit.setParents(new String[] {});
-		commit.setTime(System.currentTimeMillis());
-		commit.setFullMessage(COMMIT_MESSAGE);
-		repository.addCommit(commit);
-
-		BranchModel branch = new BranchModel();
-		branch.setCommit(COMMIT_ID);
-		branch.setName("refs/remotes/origin/master");
-		repository.addBranch(branch);
-		
-		return commit;
-	}
-	
-	private FolderView getFolderView() {
+	private FolderView getFolderView() throws RepositoryNotFoundException, GitException {
 		FolderView view = openLoginScreen()
 				.login(NET_ID, PASSWORD)
 				.toProjectsView()
@@ -73,6 +32,10 @@ public class FolderTest extends WebTest {
 				.listCommits()
 				.get(0).click()
 				.viewFiles();
+		
+		CommitProxy commit = gitBackend.open(REPOSITORY_PATH).unsafe()
+				.getBranch("master")
+				.getCommits(0, 10).get(0);
 		
 		assertEquals(commit.getAuthor(), view.getAuthorHeader());
 		assertEquals(commit.getMessage(), view.getMessageHeader());
@@ -99,12 +62,18 @@ public class FolderTest extends WebTest {
 	 *   <li>I am redirected to the folder page.</li>
 	 *   <li>The elements in the folder page match the elements in the repository.</li>
 	 * </ol>
+	 * @throws IOException 
+	 * @throws GitException 
 	 */
 	@Test
-	public void testFileExplorer() throws InterruptedException {
+	public void testFileExplorer() throws InterruptedException, GitException, IOException {
 		FolderView view = getFolderView();
 		assertThat(view.getPath(), containsString(REPO_NAME));
-		Map<String, EntryType> expected = gitServerClient.repositories().listDirectoryEntries(repository, COMMIT_ID, "");
+		
+		Map<String, EntryType> expected = gitBackend.open(REPOSITORY_PATH)
+				.unsafe()
+				.getBranch("master")
+				.getCommits(0, 10).get(0).showTree("");
 		Map<String, EntryType> actual = view.getDirectoryEntries();
 		assertEquals(expected, actual);
 	}
@@ -127,18 +96,31 @@ public class FolderTest extends WebTest {
 	 *   <li>I am redirected to the file page.</li>
 	 *   <li>The contents in the file match the contents in the repository.</li>
 	 * </ol>
+	 * @throws GitException 
+	 * @throws IOException 
 	 */	
 	@Test
-	public void testOpenFile() {
+	public void testOpenFile() throws GitException, IOException {
 		TextFileView view = getFolderView()
 				.getDirectoryElements()
-				.get(1).click();
+				.stream()
+				.filter(a -> a.getType().equals(EntryType.TEXT))
+				.findFirst()
+				.get().click();
 		
-		assertEquals(TEXT_FILE_NAME, view.getFilename());
+		CommitProxy commit =  gitBackend.open(REPOSITORY_PATH)
+				.unsafe()
+				.getBranch("master")
+				.getCommits(0, 10).get(0);
+		
+		String fileName = view.getFilename();
 		assertThat(view.getPath(), containsString(REPO_NAME));
 		assertEquals(commit.getAuthor(), view.getAuthorHeader());
 		assertEquals(commit.getMessage(), view.getMessageHeader());
-		assertEquals(RepositoriesMock.DEFAULT_FILE_CONTENTS, view.getContent());
+		
+		InputStream expected = commit.showFile(fileName).openStream();
+		InputStream actual = IOUtils.toInputStream(view.getContent());
+		IOUtils.contentEquals(expected, actual);
 	}
 	
 }

@@ -19,21 +19,25 @@ import org.eclipse.jgit.transport.resolver.ServiceNotAuthorizedException;
 
 import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
+import com.google.inject.Provider;
+import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 
 @Slf4j
+@Singleton
 public class GitBackendImpl implements GitBackend {
 	
 	private final File root;
 	private final Path rootPath;
-	private final Groups groups;
+	private final Provider<Groups> groupsProvider;
 	
 	@Inject
 	public GitBackendImpl(@Named("directory.mirrors") final File root,
-			final Groups groups) {
+			final Provider<Groups> groupsProvider) {
 		this.root = root;
 		this.rootPath = root.toPath();
-		this.groups = groups;
+		this.groupsProvider = groupsProvider;
+		log.debug("Initialized GitBackend in {}", root);
 	}
 	
 	@Override
@@ -41,25 +45,20 @@ public class GitBackendImpl implements GitBackend {
 		Preconditions.checkNotNull(path);
 		Preconditions.checkArgument(!path.isEmpty());
 		
-		final Path rootPath = root.toPath();
-		final Path newPath = rootPath.resolve(path);
-		File folder = newPath.toFile();
+		File folder = new File(root, path);
 		
 		if(folder.exists()) throw new RepositoryExists(path);
-		
-		for(int i = 0, l = newPath.getNameCount(); i < l; i++) {
-			folder =  newPath.subpath(0, i+1).toFile();
-			folder.mkdir();
-			Preconditions.checkArgument(!new File(folder, ".git").exists(),
-				"There shouldn't be a git repository in the path from the mirrors root");
-		}
+		// TODO Check if parent folders between current folder and root do not contain git repos
 		
 		try {
 			if(templateRepository != null) {
+				log.info("Cloning {} into {}", templateRepository, folder);
 				Git.cloneRepository().setDirectory(folder).setURI(templateRepository).call();
+				log.info("Finished clone in {}", folder);
 			}
 			else {
 				Git.init().setDirectory(folder).call();
+				log.info("Initialized new repository in {}", folder);
 			}
 		}
 		catch (GitAPIException e) {
@@ -96,7 +95,7 @@ public class GitBackendImpl implements GitBackend {
 			Group group;
 			
 			try {
-				group = groups.findByRepoName(repoName);
+				group = groupsProvider.get().findByRepoName(repoName);
 			} catch (EntityNotFoundException e) {
 				log.debug("Group could not be found for repository {}", repoName);
 				throw new RepositoryNotFoundException(repoName, e);

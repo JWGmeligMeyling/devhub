@@ -1,11 +1,14 @@
 package nl.tudelft.ewi.devhub.webtests.views;
 
 import java.util.List;
+import java.util.function.Function;
 
 import com.google.common.collect.Lists;
+
 import lombok.Data;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -158,6 +161,11 @@ public class View {
 			alerts.add(new Alert(element.getText(), Alert.Type.deriveType(cssClasses)));
 		}
 		return alerts;
+	}
+	
+	 public <T extends View> T navigateBack(final Function<WebDriver, T> factory) {
+		driver.navigate().back();
+		return factory.apply(driver);
 	}
 
 	@Data

@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 import com.google.inject.persist.Transactional;
+
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import nl.tudelft.ewi.devhub.server.database.controllers.CourseAssistants;
@@ -22,11 +23,8 @@ import nl.tudelft.ewi.devhub.server.database.entities.CourseAssistant;
 import nl.tudelft.ewi.devhub.server.database.entities.Group;
 import nl.tudelft.ewi.devhub.server.database.entities.GroupMembership;
 import nl.tudelft.ewi.devhub.server.database.entities.User;
-import nl.tudelft.ewi.git.client.GitServerClientMock;
-import nl.tudelft.ewi.git.models.CreateRepositoryModel;
-import nl.tudelft.ewi.git.models.GroupModel;
-import nl.tudelft.ewi.git.models.RepositoryModel.Level;
-import nl.tudelft.ewi.git.models.UserModel;
+import nl.tudelft.ewi.jgit.proxy.GitBackend;
+import nl.tudelft.ewi.jgit.proxy.GitBackend.RepositoryExists;
 
 @Slf4j
 public class Bootstrapper {
@@ -75,12 +73,12 @@ public class Bootstrapper {
 	private final GroupMemberships memberships;
 	private final MockedAuthenticationBackend authBackend;
 	private final ObjectMapper mapper;
-	private final GitServerClientMock gitClient;
+	private final GitBackend gitBackend;
 
 	@Inject
 	Bootstrapper(Users users, Courses courses, CourseAssistants assistants, Groups groups, 
 			GroupMemberships memberships, MockedAuthenticationBackend authBackend, ObjectMapper mapper,
-			GitServerClientMock gitClient) {
+			GitBackend gitBackend) {
 		
 		this.users = users;
 		this.courses = courses;
@@ -89,7 +87,7 @@ public class Bootstrapper {
 		this.memberships = memberships;
 		this.authBackend = authBackend;
 		this.mapper = mapper;
-		this.gitClient = gitClient;
+		this.gitBackend = gitBackend;
 	}
 	
 	@Transactional
@@ -125,12 +123,6 @@ public class Bootstrapper {
 			
 			log.debug("Persisted course: " + entity.getCode());
 			
-			GroupModel groupModel = new GroupModel();
-			groupModel.setName(entity.getCode());
-			
-			gitClient.groups()
-					.create(groupModel);
-			
 			for (String assistantNetId : course.getAssistants()) {
 				User assistantUser = userMapping.get(assistantNetId);
 				
@@ -139,32 +131,20 @@ public class Bootstrapper {
 				assistant.setUser(assistantUser);
 				assistants.persist(assistant);
 				
-				UserModel userModel = gitClient.users()
-						.ensureExists(assistantNetId);
-				
-				gitClient.groups()
-						.groupMembers(groupModel)
-						.addMember(userModel);
-				
 				log.debug("    Persisted assistant: " + assistantUser.getNetId());
 			}
 			
 			for (BGroup group : course.getGroups()) {
+				String repositoryName = "courses/" + entity.getCode() + "/group-" + group.getGroupNumber();
+				
 				Group groupEntity = new Group();
 				groupEntity.setCourse(entity);
 				groupEntity.setGroupNumber(group.getGroupNumber());
 				groupEntity.setBuildTimeout(group.getBuildTimeout());
-				groupEntity.setRepositoryName("courses/" + entity.getCode() + "/group-" + group.getGroupNumber());
+				groupEntity.setRepositoryName(repositoryName);
 				groups.persist(groupEntity);
 				
 				log.debug("    Persisted group: " + groupEntity.getGroupName());
-
-				CreateRepositoryModel repositoryModel = new CreateRepositoryModel();
-				repositoryModel.setName(groupEntity.getRepositoryName());
-				repositoryModel.setTemplateRepository(group.getTemplateRepositoryUrl());
-				
-				Map<String, Level> permissions = Maps.newHashMap();
-				permissions.put(groupModel.getName(), Level.ADMIN);
 				
 				for (String member : group.getMembers()) {
 					User memberUser = userMapping.get(member);
@@ -174,15 +154,19 @@ public class Bootstrapper {
 					membership.setUser(memberUser);
 					memberships.persist(membership);
 					
-					permissions.put(member, Level.READ_WRITE);
-					
 					log.debug("        Persisted member: " + memberUser.getNetId());
 				}
 				
-				repositoryModel.setPermissions(permissions);
-				
-				gitClient.repositories()
-						.create(repositoryModel);
+				try {
+					gitBackend.create(repositoryName, course.getTemplateRepositoryUrl());
+				}
+				catch (RepositoryExists e) {
+					// Caching the test repository is actually good to not
+					// request the template repositories too much
+				}
+				catch (Exception e) {
+					throw new RuntimeException(e);
+				}
 			}
 		}
 	}

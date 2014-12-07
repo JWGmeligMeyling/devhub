@@ -54,7 +54,7 @@ public class ProjectView extends AuthenticatedView {
 		
 		for (WebElement entry : entries) {
 			WebElement diffLink = entry.findElement(By.tagName("a"));
-			String message = entry.findElement(By.className("comment")).getText();
+			String message = entry.findElement(By.className("commit-message")).getText();
 			String author = entry.findElement(By.className("committer")).getText();
 			commits.add(new Commit(message, author, null, diffLink));
 		}
