@@ -32,7 +32,6 @@ public class GitSSHDaemon {
 		
 		sshd = SshServer.setUpDefaultServer();
 		addProperty(SshServer.IDLE_TIMEOUT, "10000");
-		
 		sshd.setHost(host);
 		sshd.setPort(port);
 		sshd.setKeyPairProvider(keyPairProvider);

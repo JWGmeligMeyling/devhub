@@ -196,4 +196,13 @@
 			referencedTableName="users" referencedColumnNames="id" />
 	</changeSet>
 	
+	<changeSet id="add_git" author="Jan-Willem Gmelig Meyling">
+		<insert tableName="users">
+			<column name="net_id">git</column>
+			<column name="name">git</column>
+			<column name="email">git@localhost</column>
+			<column name="admin">true</column>
+		</insert>
+	</changeSet>
+	
 </databaseChangeLog>

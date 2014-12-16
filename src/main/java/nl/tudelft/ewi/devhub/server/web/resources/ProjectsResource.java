@@ -25,7 +25,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
+import nl.tudelft.ewi.devhub.server.RepositoryUrlResolver;
 import nl.tudelft.ewi.devhub.server.backend.ProjectsBackend;
 import nl.tudelft.ewi.devhub.server.database.controllers.BuildResults;
 import nl.tudelft.ewi.devhub.server.database.controllers.Courses;
@@ -58,11 +58,9 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.inject.name.Named;
 import com.google.inject.persist.Transactional;
 import com.google.inject.servlet.RequestScoped;
 
-@Slf4j
 @RequestScoped
 @Path("projects")
 @Produces(MediaType.TEXT_HTML + Resource.UTF8_CHARSET)
@@ -81,14 +79,13 @@ public class ProjectsResource extends Resource {
 	private final RequestScope scope;
 	private final Users users;
 	private final BuildResults buildResults;
-	private final String cloneUrlTemplate;
+	private final RepositoryUrlResolver repoNameResolver;
 
 	@Inject
 	ProjectsResource(TemplateEngine templateEngine, Groups groups,
 			ProjectsBackend projectsBackend, Courses projects,
 			GitBackend gitBackend, RequestScope scope, Users users,
-			BuildResults buildResults,
-			@Named("clone.url.template") String cloneUrlTemplate) {
+			BuildResults buildResults, RepositoryUrlResolver repoNameResolver) {
 
 		this.templateEngine = templateEngine;
 		this.projectsBackend = projectsBackend;
@@ -98,7 +95,7 @@ public class ProjectsResource extends Resource {
 		this.scope = scope;
 		this.users = users;
 		this.buildResults = buildResults;
-		this.cloneUrlTemplate = cloneUrlTemplate;
+		this.repoNameResolver = repoNameResolver;
 	}
 
 	@GET
@@ -333,7 +330,8 @@ public class ProjectsResource extends Resource {
 		parameters.put("group", group);
 		parameters.put("states", new CommitChecker(group, buildResults));
 		parameters.put("repository", repository);
-		parameters.put("cloneUrl", getCloneUrl(repository));
+		parameters.put("cloneUrl", repoNameResolver.resolveSsh(scope.getUser()
+				.getNetId(), repository.getPath()));
 		
 		if(branch != null) {
 			parameters.put("branch", branch);
@@ -345,12 +343,6 @@ public class ProjectsResource extends Resource {
 		return display(templateEngine.process("project-view.ftl", locales, parameters));
 	}
 	
-	private String getCloneUrl(RepositoryProxy repo) {
-		return cloneUrlTemplate
-			.replace("{username}", scope.getUser().getNetId())
-			.replace("{path}", repo.getPath());
-	}
-
 	@GET
 	@Path("{courseCode}/groups/{groupNumber}/commits/{commitId}")
 	public Response showCommitOverview(@Context HttpServletRequest request) {
@@ -530,9 +522,6 @@ public class ProjectsResource extends Resource {
 			
 			EntryType type = entries.get(fileName);
 			ObjectLoader file = commitProxy.showFile(path);
-			
-			int test = file.getType();
-			log.info("Type {} is {}", type, test);
 			
 			if (type == EntryType.BINARY) {
 				return Response.ok(file.openStream(), MediaType.APPLICATION_OCTET_STREAM)

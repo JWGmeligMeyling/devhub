@@ -14,11 +14,16 @@ import nl.tudelft.ewi.devhub.server.database.controllers.SshKeys;
 import nl.tudelft.ewi.devhub.server.database.controllers.Users;
 import nl.tudelft.ewi.devhub.server.database.entities.SshKey;
 import nl.tudelft.ewi.devhub.server.database.entities.User;
+import nl.tudelft.ewi.jgit.proxy.BuildHook;
 import nl.tudelft.ewi.jgit.proxy.GitBackend;
+import nl.tudelft.ewi.jgit.proxy.RepositoryProxy;
+import nl.tudelft.ewi.jgit.proxy.BuildHook.BuildHookFactory;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.sshd.common.Session.AttributeKey;
 import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.server.PasswordAuthenticator;
 import org.apache.sshd.server.PublickeyAuthenticator;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
@@ -37,16 +42,23 @@ import org.eclipse.jgit.transport.resolver.UploadPackFactory;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provider;
 import com.google.inject.Provides;
+import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.inject.name.Named;
 
 @Slf4j
 public class GitSSHModule extends AbstractModule {
 	
 	private final AttributeKey<User> USER_KEY = new AttributeKey<User>();
+	private final AttributeKey<RepositoryProxy> REPOSITORY = new AttributeKey<RepositoryProxy>();
 
 	@Override
 	protected void configure() {
 		bind(ExecutorService.class).toInstance(Executors.newCachedThreadPool());
+		
+		install(new FactoryModuleBuilder()
+			.implement(BuildHook.class, BuildHook.class)
+			.build(BuildHook.BuildHookFactory.class));
+		
 		bind(GitSSHDaemon.class).asEagerSingleton();
 	}
 	
@@ -80,7 +92,11 @@ public class GitSSHModule extends AbstractModule {
 			public boolean authenticate(String username, PublicKey key,
 					ServerSession session) {
 				
-				log.debug("Trying to authenticate {} using public key", username);
+				try{
+					log.debug("Trying to authenticate {} using public key {}", username, key.toString());
+				} catch (Throwable t) {
+					log.error("Oops", t);
+				}
 				
 				User user;
 				
@@ -89,6 +105,11 @@ public class GitSSHModule extends AbstractModule {
 				}
 				catch (EntityNotFoundException e) {
 					return false;
+				}
+				
+				if(username.equals("git")) {
+					log.debug("Continue as user is git");
+					return true;
 				}
 				
 				List<SshKey> keys = sshKeys.get().getKeysFor(user);
@@ -157,16 +178,17 @@ public class GitSSHModule extends AbstractModule {
 				log.debug("Looking for repository {}", repoName);
 				
 				User user = req.getSessionAttribute(USER_KEY);
-				return gitBackendProvider.get()
-					.open(repoName).as(user)
-					.getRepository();
+				RepositoryProxy proxy = gitBackendProvider.get()
+						.open(repoName).as(user);
+				req.setSessionAttribute(REPOSITORY, proxy);
+				return proxy.getRepository();
 			}
 			
 		};
 	}
 	
 	@Provides
-	public ReceivePackFactory<GitCommand> getReceivePackFactory() {
+	public ReceivePackFactory<GitCommand> getReceivePackFactory(final Provider<BuildHookFactory> buildHookFactory) {
 		return new ReceivePackFactory<GitCommand>() {
 
 			@Override
@@ -175,12 +197,13 @@ public class GitSSHModule extends AbstractModule {
 					ServiceNotAuthorizedException {
 				
 				User user = req.getSessionAttribute(USER_KEY);
+				RepositoryProxy repo = req.getSessionAttribute(REPOSITORY);
 				log.debug("User {} requesting upload to {}", user, db);
 				
 				final ReceivePack rp = new ReceivePack(db);
 				rp.setAllowNonFastForwards(user.isAdmin());
-				rp.sendMessage("Welcome to Devhub");
 				rp.setMaxObjectSizeLimit(50 * 1024 * 1024);
+				rp.setPostReceiveHook(buildHookFactory.get().create(repo));
 				return rp;
 			}
 		};

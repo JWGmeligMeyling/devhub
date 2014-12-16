@@ -58,13 +58,6 @@ public class Config {
 	}
 
 	/**
-	 * @return The HTTP URL on which we can reach the GIT server.
-	 */
-	public String getGitServerHost() {
-		return properties.getProperty("git-server.host");
-	}
-
-	/**
 	 * @return The hostname of the SMTP server.
 	 */
 	public String getSmtpHost() {
@@ -127,13 +120,6 @@ public class Config {
 	 */
 	public String getLDAPPrimaryDomain() {
 		return properties.getProperty("ldap.primarydomain");
-	}
-	
-	/**
-	 * @return the format for the clone url
-	 */
-	public String getCloneUrl() {
-		return properties.getProperty("clone.url.template");
 	}
 	
 	/**

@@ -12,9 +12,7 @@ import com.google.inject.servlet.ServletModule;
 
 import lombok.extern.slf4j.Slf4j;
 import nl.tudelft.ewi.devhub.server.backend.AuthenticationBackend;
-import nl.tudelft.ewi.devhub.server.backend.AuthenticationBackendImpl;
-import nl.tudelft.ewi.devhub.server.backend.AuthenticationProvider;
-import nl.tudelft.ewi.devhub.server.backend.LdapAuthenticationProvider;
+import nl.tudelft.ewi.devhub.server.backend.MailBackend;
 import nl.tudelft.ewi.devhub.server.database.DbModule;
 import nl.tudelft.ewi.devhub.server.web.templating.TranslatorFactory;
 import nl.tudelft.ewi.jgit.proxy.GitBackend;
@@ -49,12 +47,25 @@ public class DevhubModule extends ServletModule {
 		
 		bind(Integer.class).annotatedWith(Names.named("jgit.sshd.port")).toInstance(config.getSSHPort());
 		bind(String.class).annotatedWith(Names.named("jgit.sshd.host")).toInstance(config.getSSHHost());
-		bind(String.class).annotatedWith(Names.named("clone.url.template")).toInstance(config.getCloneUrl());
+		bind(MailBackend.class).toInstance(new MailBackend(config){
+			
+			@Override
+			public void sendMail(Mail mail) {
+				log.info("Caught mail : {}", mail);
+			}
+			
+		});
 		
 		bind(TranslatorFactory.class).toInstance(new TranslatorFactory("i18n.devhub"));
 		bind(GitBackend.class).to(GitBackendImpl.class);
-		bind(AuthenticationBackend.class).to(AuthenticationBackendImpl.class);
-		bind(AuthenticationProvider.class).to(LdapAuthenticationProvider.class);
+		bind(AuthenticationBackend.class).toInstance(new AuthenticationBackend() {
+			
+			@Override
+			public boolean authenticate(String netId, String password) {
+				return netId.equals("jgmeligmeyling") &&
+					password.equals("a9QrW32a!");
+			}
+		});
 		
 //		TODO Unused binding
 //		bind(LdapUserProcessor.class).to(PersistingLdapUserProcessor.class);

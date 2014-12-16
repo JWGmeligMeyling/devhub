@@ -1,7 +1,6 @@
 package nl.tudelft.ewi.devhub.server.database.entities;
 
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 import javax.persistence.Column;
@@ -29,26 +28,10 @@ import com.google.common.collect.Lists;
 
 @Data
 @Entity
-@EqualsAndHashCode(of = { "netId" })
-@ToString(of = { "netId" })
 @Table(name = "users")
+@ToString(of = {"id", "name", "netId" })
+@EqualsAndHashCode(of = { "netId" })
 public class User {
-
-	private static final Comparator<Group> GROUP_COMPARATOR = new Comparator<Group>() {
-		@Override
-		public int compare(Group group1, Group group2) {
-			Course course1 = group1.getCourse();
-			Course course2 = group2.getCourse();
-			String code1 = course1.getCode();
-			String code2 = course2.getCode();
-			int compare = code1.compareTo(code2);
-			if (compare != 0) {
-				return compare;
-			}
-			
-			return (int) (group1.getGroupNumber() - group2.getGroupNumber());
-		}
-	};
 
 	@Id
 	@Column(name = "id")
@@ -85,7 +68,7 @@ public class User {
 			groups.add(membership.getGroup());
 		}
 
-		Collections.sort(groups, GROUP_COMPARATOR);
+		Collections.sort(groups);
 		return groups;
 	}
 	
@@ -95,7 +78,7 @@ public class User {
 			groups.addAll(assist.getCourse().getGroups());
 		}
 
-		Collections.sort(groups, GROUP_COMPARATOR);
+		Collections.sort(groups);
 		return groups;
 	}
 

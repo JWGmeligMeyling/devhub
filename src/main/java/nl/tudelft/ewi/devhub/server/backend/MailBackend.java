@@ -45,7 +45,7 @@ public class MailBackend {
 	private final AtomicBoolean sending;
 
 	@Inject
-	MailBackend(Config config) {
+	public MailBackend(Config config) {
 		this.config = config;
 		this.mailQueue = Queues.newArrayBlockingQueue(MAIL_QUEUE_SIZE);
 		this.executor = Executors.newSingleThreadExecutor();

@@ -25,7 +25,7 @@ import com.google.common.collect.Sets;
 @Table(name = "groups")
 @EqualsAndHashCode(of = { "groupId" })
 @ToString(of = { "groupId" })
-public class Group {
+public class Group implements Comparable<Group> {
 
 	@Id
 	@Column(name = "id")
@@ -68,6 +68,20 @@ public class Group {
 		builder.append(groupNumber);
 		builder.append(")");
 		return builder.toString();
+	}
+
+	@Override
+	public int compareTo(Group group2) {
+		Course course1 = getCourse();
+		Course course2 = group2.getCourse();
+		String code1 = course1.getCode();
+		String code2 = course2.getCode();
+		int compare = code1.compareTo(code2);
+		if (compare != 0) {
+			return compare;
+		}
+		
+		return (int) (getGroupNumber() - group2.getGroupNumber());
 	}
 
 }

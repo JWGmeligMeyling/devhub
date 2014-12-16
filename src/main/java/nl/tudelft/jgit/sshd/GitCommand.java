@@ -14,6 +14,8 @@ import org.eclipse.jgit.transport.resolver.RepositoryResolver;
 import org.eclipse.jgit.transport.resolver.ServiceNotAuthorizedException;
 import org.eclipse.jgit.transport.resolver.ServiceNotEnabledException;
 
+import com.google.common.base.Preconditions;
+
 public abstract class GitCommand extends AbstractCommand implements SessionAware {
 	
 	protected final String command;
@@ -32,7 +34,7 @@ public abstract class GitCommand extends AbstractCommand implements SessionAware
 		this.repoName = buildRepositoryName(command);
 	}
 	
-	private String buildRepositoryName( String command ) {
+	private String buildRepositoryName(String command) {
         int start = getCommandName().length() + 2;
         final String temp = command.substring( start );
         return temp.substring(1, temp.indexOf( "'" )).replace( '\\', '/' );
@@ -67,6 +69,7 @@ public abstract class GitCommand extends AbstractCommand implements SessionAware
 
 	@Override
 	public void setSession(ServerSession session) {
+		Preconditions.checkNotNull(session);
 		this.session = session;
 	}
 
@@ -84,10 +87,20 @@ public abstract class GitCommand extends AbstractCommand implements SessionAware
 	}
 	
 	public <T> T getSessionAttribute(AttributeKey<T> key) {
+		Preconditions.checkNotNull(key);
 		if (session == null)
 			throw new IllegalStateException(new NullPointerException(
 					"Session should not be null"));
 		return session.getAttribute(key);
+	}
+
+	public<T> void setSessionAttribute(AttributeKey<T> key, T value) {
+		Preconditions.checkNotNull(key);
+		Preconditions.checkNotNull(value);
+		if (session == null)
+			throw new IllegalStateException(new NullPointerException(
+					"Session should not be null"));
+		session.setAttribute(key, value);
 	}
 	
 }
