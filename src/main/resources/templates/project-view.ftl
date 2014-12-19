@@ -44,7 +44,7 @@
 			</button>
 			<ul class="dropdown-menu" role="menu">
 	[#list repository.getBranches() as b ]
-				<li><a href="/projects/${group.course.code}/groups/${group.groupNumber}/branch/${b.getSimpleName()}">${b.getSimpleName()}</a></li>
+				<li><a href="/projects/${group.repositoryName}/branch/${b.getSimpleName()}">${b.getSimpleName()}</a></li>
 	[/#list]
 			</ul>
 		</div>
@@ -63,12 +63,12 @@
 				[#if states.hasFinished(commit.getCommit())]
 					[#if states.hasSucceeded(commit.getCommit())]
 						<td class="commit succeeded">
-							<a href="/projects/${group.course.code}/groups/${group.groupNumber}/commits/${commit.getCommit()}/build">
+							<a href="/projects/${group.repositoryName}/commits/${commit.getCommit()}/build">
 								<span class="state glyphicon glyphicon-ok-circle" title="Build succeeded!"></span>
 							</a>
 					[#else]
 						<td class="commit failed">
-							<a href="/projects/${group.course.code}/groups/${group.groupNumber}/commits/${commit.getCommit()}/build">
+							<a href="/projects/${group.repositoryName}/commits/${commit.getCommit()}/build">
 								<span class="state glyphicon glyphicon-remove-circle" title="Build failed!"></span>
 							</a>
 					[/#if]
@@ -80,7 +80,7 @@
 						<td class="commit ignored">
 							<span class="state glyphicon glyphicon-unchecked"></span>
 			[/#if]
-							<a href="/projects/${group.course.code}/groups/${group.groupNumber}/commits/${commit.getCommit()}/diff">
+							<a href="/projects/${group.repositoryName}/commits/${commit.getCommit()}/diff">
 								<div class="comment">
 									<span class="commit-message">${commit.getMessage()}</span>
 									<span class="tags">[@listTags repository commit.getCommit() /]</span>
@@ -116,9 +116,9 @@
 				<ul class="pagination pagination-lg">
 	[#list 1..pageCount as pageNumber ]
 		[#if pageNumber == currentPage ]
-					<li class="active"><a href="/projects/${group.course.code}/groups/${group.groupNumber}/branch/${branch.getSimpleName()}?page=${pageNumber}">${pageNumber}</a></li>
+					<li class="active"><a href="/projects/${group.repositoryName}/branch/${branch.getSimpleName()}?page=${pageNumber}">${pageNumber}</a></li>
 		[#else]
-					<li><a href="/projects/${group.course.code}/groups/${group.groupNumber}/branch/${branch.getSimpleName()}?page=${pageNumber}">${pageNumber}</a></li>
+					<li><a href="/projects/${group.repositoryName}/branch/${branch.getSimpleName()}?page=${pageNumber}">${pageNumber}</a></li>
 		[/#if]
 	[/#list]
 				</ul>

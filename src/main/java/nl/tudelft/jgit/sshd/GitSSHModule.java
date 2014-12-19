@@ -19,11 +19,9 @@ import nl.tudelft.ewi.jgit.proxy.GitBackend;
 import nl.tudelft.ewi.jgit.proxy.RepositoryProxy;
 import nl.tudelft.ewi.jgit.proxy.BuildHook.BuildHookFactory;
 
-import org.apache.commons.codec.binary.Base64;
 import org.apache.sshd.common.Session.AttributeKey;
 import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.server.PasswordAuthenticator;
 import org.apache.sshd.server.PublickeyAuthenticator;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
@@ -92,24 +90,14 @@ public class GitSSHModule extends AbstractModule {
 			public boolean authenticate(String username, PublicKey key,
 					ServerSession session) {
 				
-				try{
-					log.debug("Trying to authenticate {} using public key {}", username, key.toString());
-				} catch (Throwable t) {
-					log.error("Oops", t);
-				}
-				
 				User user;
 				
 				try {
 					user = users.get().findByNetId(username);
 				}
 				catch (EntityNotFoundException e) {
+					log.debug("User {} could not be found", username);
 					return false;
-				}
-				
-				if(username.equals("git")) {
-					log.debug("Continue as user is git");
-					return true;
 				}
 				
 				List<SshKey> keys = sshKeys.get().getKeysFor(user);
@@ -142,7 +130,6 @@ public class GitSSHModule extends AbstractModule {
 			
 			public boolean authenticate(final String username, final String password,
 					ServerSession session) {
-				log.debug("Ssh connection {}", username);
 				
 				User user;
 				
@@ -150,14 +137,17 @@ public class GitSSHModule extends AbstractModule {
 					user = users.get().findByNetId(username);
 				}
 				catch (EntityNotFoundException e) {
+					log.debug("User {} could not be found", username);
 					return false;
 				}
 				
 				if(authBackend.get().authenticate(username, password)) {
 					session.setAttribute(USER_KEY, user);
+					log.debug("{} authenticated using password", username);
 					return true;
 				}
-				
+
+				log.debug("Failed to authenticate {} using password", username);
 				return false;
 			}
 			
