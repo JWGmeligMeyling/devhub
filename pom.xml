@@ -29,6 +29,9 @@
 		<querydsl.version>3.6.0</querydsl.version>
 		<logback.version>1.0.13</logback.version>
 		<selenium.version>2.45.0</selenium.version>
+		<findbugs.version>3.0.1</findbugs.version>
+		<jacoco.version>0.7.5.201505241946</jacoco.version>
+		<pmd.version>3.4</pmd.version>
 	</properties>
 
     <repositories>
@@ -77,6 +80,24 @@
             <email>j.gmeligmeyling@student.tudelft.nl</email>
         </developer>
     </developers>
+
+	<contributors>
+		<contributor>
+			<name>Tim van der Lippe</name>
+		</contributor>
+		<contributor>
+			<name>Liam Clark</name>
+		</contributor>
+	</contributors>
+
+
+	<licenses>
+		<license>
+			<name>Apache License, Version 2.0</name>
+			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
 
 	<dependencies>
 		<!-- Web -->
@@ -398,6 +419,18 @@
 		</resources>
 		<plugins>
 			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>${jacoco.version}</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
 				<groupId>org.lesscss</groupId>
 				<artifactId>lesscss-maven-plugin</artifactId>
 				<version>1.7.0.1.1</version>
@@ -488,5 +521,84 @@
 			</plugin>
 		</plugins>
 	</build>
+
+	<reporting>
+		<plugins>
+			<!-- Link sources for reports -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jxr-plugin</artifactId>
+				<configuration>
+					<linkJavadoc>true</linkJavadoc>
+				</configuration>
+				<version>2.5</version>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-project-info-reports-plugin</artifactId>
+				<version>2.8</version>
+				<configuration>
+					<dependencyDetailsEnabled>false</dependencyDetailsEnabled>
+					<dependencyLocationsEnabled>false</dependencyLocationsEnabled>
+				</configuration>
+			</plugin>
+
+			<!-- JUnit report -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-report-plugin</artifactId>
+				<version>2.18.1</version>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>2.10.3</version>
+				<configuration>
+					<failOnError>false</failOnError>
+				</configuration>
+				<reportSets>
+					<reportSet>
+						<id>default</id>
+						<reports>
+							<report>javadoc</report>
+						</reports>
+					</reportSet>
+				</reportSets>
+			</plugin>
+
+			<!-- Coverage -->
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>${jacoco.version}</version>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-pmd-plugin</artifactId>
+				<version>${pmd.version}</version>
+				<configuration>
+					<skipEmptyReport>false</skipEmptyReport>
+					<includeTests>true</includeTests>
+					<rulesets>
+						<ruleset>pmd-rules.xml</ruleset>
+					</rulesets>
+				</configuration>
+
+			</plugin>
+
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>findbugs-maven-plugin</artifactId>
+				<version>${findbugs.version}</version>
+				<configuration>
+					<failOnError>false</failOnError>
+				</configuration>
+			</plugin>
+
+		</plugins>
+	</reporting>
 
 </project>
