@@ -68,10 +68,11 @@ public class Delivery implements Event, Base {
      * @author Jan-Willem Gmelig Meyling
      */
     public enum State {
-        SUBMITTED("delivery.state.submitted", "info", "delivery.state.submitted.description", "delivery.state.submitted.message"),
-        REJECTED("delivery.state.rejected", "warning", "delivery.state.rejected.description", "delivery.state.rejected.message"),
-        APPROVED("delivery.state.approved", "success", "delivery.state.approved.description", "delivery.state.approved.message"),
-        DISAPPROVED("delivery.state.disapproved", "danger", "delivery.state.disapproved.description", "delivery.state.disapproved.message");
+        SUBMITTED("delivery.state.submitted", "info", "delivery.state.submitted.description", "delivery.state.submitted.message", true),
+        IN_REVIEW("delivery.state.in-review", "info", "delivery.state.in-review.description", "delivery.state.in-review.message", true),
+        REJECTED("delivery.state.rejected", "warning", "delivery.state.rejected.description", "delivery.state.rejected.message", true),
+        APPROVED("delivery.state.approved", "success", "delivery.state.approved.description", "delivery.state.approved.message", false),
+        DISAPPROVED("delivery.state.disapproved", "danger", "delivery.state.disapproved.description", "delivery.state.disapproved.message", false);
 
         /**
          * The translation key used for the badges, for example "Submitted".
@@ -99,11 +100,18 @@ public class Delivery implements Event, Base {
         @Getter
         private final String messageTranslationKey;
 
-        State(String translationKey, String style, String descriptionTranslionKey, String messageTranslationKey) {
+        /**
+         * Whether or not the assignment can be resubmitted at this stage.
+         */
+        @Getter
+        private final boolean allowResubmissions;
+
+        State(String translationKey, String style, String descriptionTranslionKey, String messageTranslationKey, boolean allowResubmissions) {
             this.translationKey = translationKey;
             this.style = style;
             this.descriptionTranslionKey = descriptionTranslionKey;
             this.messageTranslationKey = messageTranslationKey;
+            this.allowResubmissions = allowResubmissions;
         }
     }
 
@@ -237,6 +245,23 @@ public class Delivery implements Event, Base {
     public boolean isLate() {
         Date dueDate = getAssignment().getDueDate();
         return dueDate != null && getTimestamp().after(dueDate);
+    }
+
+    public State getState(User user) {
+        Review review = getReview();
+        if (review == null) {
+            return State.SUBMITTED;
+        }
+        if (assignment.isGradesReleased()) {
+            return review.getState();
+        }
+        if (user.isAdmin() || user.isAssisting(group.getCourseEdition())) {
+            State state = review.getState();
+            if (State.SUBMITTED.equals(state)) {
+                if (State.)
+            }
+            return review.getState();
+        }
     }
 
 	@Override
