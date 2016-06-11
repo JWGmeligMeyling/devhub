@@ -16,6 +16,7 @@ import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinColumns;
+import javax.persistence.Lob;
 import javax.persistence.MapsId;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
@@ -58,6 +59,7 @@ public class BuildResult implements Base {
 	@Column(name = "success")
 	private Boolean success;
 
+	@Lob
 	@Column(name = "log")
 	@Basic(fetch = FetchType.LAZY)
 	@Type(type = "org.hibernate.type.TextType")
