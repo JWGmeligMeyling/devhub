@@ -83,6 +83,13 @@ module.controller('StatisticsControl', function($scope, $http, $q) {
         if (assignment) {
             $http.put('json', assignment).then(function(res) {
                 $scope.assignment = res.data;
+            }, function() {
+                try {
+	                  location.reload();
+                }
+                catch (e) {
+                    alert('Your session expired, please login.');
+                }
             });
         }
     };
